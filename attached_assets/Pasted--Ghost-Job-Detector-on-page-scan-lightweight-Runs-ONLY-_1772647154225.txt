@@ -1,14 +1,9 @@
+// Ghost Job Detector — on-page scan (lightweight)
+// Runs ONLY on supported job boards based on manifest matches.
+
 const API_BASE_DEFAULT = "https://ghost-job-detector.replit.app";
 
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
+// --- Utilities ---
 function safeHostname(url) {
   try { return new URL(url).hostname; } catch { return ""; }
 }
@@ -36,6 +31,7 @@ function normalizeRisk(risk) {
   return "neutral";
 }
 
+// --- UI ---
 function createFab() {
   const fab = document.createElement("div");
   fab.id = "gjdb-fab";
@@ -74,17 +70,20 @@ function hideTooltip(tip) {
   tip.style.display = "none";
 }
 
+// --- Main ---
 (async function init() {
   const pageUrl = window.location.href;
 
-  if (!isSupportedSite(pageUrl)) return;
+  if (!isSupportedSite(pageUrl)) return; // guardrail
 
   const fab = createFab();
   const tip = createTooltip();
 
+  // hover behavior
   fab.addEventListener("mouseenter", () => showTooltip(tip));
   fab.addEventListener("mouseleave", () => hideTooltip(tip));
 
+  // load user-configured API (from popup) if present
   function getApiBase() {
     return new Promise((resolve) => {
       chrome.storage.sync.get(["apiBaseUrl"], (result) => {
@@ -109,6 +108,7 @@ function hideTooltip(tip) {
     try {
       const apiBase = await getApiBase();
 
+      // IMPORTANT: adjust endpoint name if yours differs
       const res = await fetch(`${apiBase}/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -119,6 +119,8 @@ function hideTooltip(tip) {
 
       const data = await res.json();
 
+      // expected response:
+      // { risk: "Low|Moderate|High", score: 0-100, reasons: ["...","..."] }
       const riskState = normalizeRisk(data.risk);
       const ringClass =
         riskState === "green" ? "gjdb-ring-green" :
@@ -132,17 +134,17 @@ function hideTooltip(tip) {
       const riskLabel = data.risk || "Unknown";
 
       showTooltip(tip, `
-        <div class="title">Risk Level: ${escapeHtml(riskLabel)}</div>
-        <div class="meta">Score: <b>${escapeHtml(score)}</b></div>
+        <div class="title">Risk Level: ${riskLabel}</div>
+        <div class="meta">Score: <b>${score}</b></div>
         <div class="pill">Click again to rescan</div>
-        ${reasons.length ? `<ul>${reasons.map(r => `<li>${escapeHtml(r)}</li>`).join("")}</ul>` : ""}
+        ${reasons.length ? `<ul>${reasons.map(r => `<li>${r}</li>`).join("")}</ul>` : ""}
       `);
 
     } catch (e) {
       setRingState(fab, "gjdb-ring-neutral");
       showTooltip(tip, `
         <div class="title">Scan failed</div>
-        <div class="meta">Couldn't reach the analyzer.</div>
+        <div class="meta">Couldn’t reach the analyzer.</div>
         <div class="pill">Try again</div>
       `);
     } finally {

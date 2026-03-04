@@ -132,6 +132,15 @@
     };
   }
 
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#39;");
+  }
+
   function getRiskColor(riskLevel) {
     switch (riskLevel) {
       case "high": return "#EF4444";
@@ -229,7 +238,7 @@
         <div class="ghost-loading">
           <div class="ghost-spinner"></div>
           <div class="ghost-loading-text">Analyzing posting...</div>
-          <div class="ghost-loading-sub">${jobData.title} at ${jobData.company}</div>
+          <div class="ghost-loading-sub">${escapeHtml(jobData.title)} at ${escapeHtml(jobData.company)}</div>
         </div>
       </div>
     `);
@@ -255,7 +264,7 @@
             <line x1="9" y1="9" x2="15" y2="15"/>
           </svg>
           <div class="ghost-error-title">Analysis Failed</div>
-          <div class="ghost-error-msg">${message}</div>
+          <div class="ghost-error-msg">${escapeHtml(message)}</div>
         </div>
       </div>
     `);
@@ -272,9 +281,9 @@
       return `
         <div class="ghost-flag">
           <span class="ghost-flag-badge" style="background:${color}20; color:${color}; border:1px solid ${color}40;">
-            ${flag.severity.toUpperCase()}
+            ${escapeHtml(flag.severity).toUpperCase()}
           </span>
-          <span class="ghost-flag-text">${flag.message}</span>
+          <span class="ghost-flag-text">${escapeHtml(flag.message)}</span>
         </div>
       `;
     }).join("");
@@ -304,14 +313,14 @@
             <div class="ghost-score-value" style="color:${riskColor};">${score}</div>
           </div>
           <div class="ghost-risk-badge" style="background:${riskColor}20; color:${riskColor}; border:1px solid ${riskColor}40;">
-            ${(data.riskLevel || "unknown").toUpperCase()} RISK
+            ${escapeHtml(data.riskLevel || "unknown").toUpperCase()} RISK
           </div>
         </div>
 
         <div class="ghost-stats-row">
           <div class="ghost-stat">
             <div class="ghost-stat-label">Confidence</div>
-            <div class="ghost-stat-value">${data.confidence}%</div>
+            <div class="ghost-stat-value">${escapeHtml(data.confidence)}%</div>
           </div>
           <div class="ghost-stat">
             <div class="ghost-stat-label">Red Flags</div>
@@ -322,7 +331,7 @@
         ${data.recommendation ? `
           <div class="ghost-recommendation">
             <div class="ghost-rec-label">Recommendation</div>
-            <div class="ghost-rec-text">${data.recommendation}</div>
+            <div class="ghost-rec-text">${escapeHtml(data.recommendation)}</div>
           </div>
         ` : ""}
 

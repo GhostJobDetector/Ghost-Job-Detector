@@ -25,6 +25,7 @@ import {
   History,
   ScanLine,
   ArrowRight,
+  Link2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,6 +47,7 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import {
   jobPostingSchema,
@@ -479,6 +481,11 @@ function JobInputForm({
   onAnalyze: (data: JobPosting) => void;
   isLoading: boolean;
 }) {
+  const { toast } = useToast();
+  const [jobUrl, setJobUrl] = useState("");
+  const [isScraping, setIsScraping] = useState(false);
+  const [activeTab, setActiveTab] = useState("manual");
+
   const form = useForm<JobPosting>({
     resolver: zodResolver(jobPostingSchema),
     defaultValues: {
@@ -490,6 +497,37 @@ function JobInputForm({
       contactEmail: "",
     },
   });
+
+  const handleScrapeUrl = async () => {
+    if (!jobUrl.trim()) {
+      toast({ title: "Enter a URL", description: "Paste a job posting URL to extract details.", variant: "destructive" });
+      return;
+    }
+    setIsScraping(true);
+    try {
+      const res = await apiRequest("POST", "/api/scrape-url", { url: jobUrl.trim() });
+      const data = await res.json();
+      if (data.error) {
+        toast({ title: "Could not extract data", description: data.error, variant: "destructive" });
+        return;
+      }
+      if (data.title) form.setValue("title", data.title);
+      if (data.company) form.setValue("company", data.company);
+      if (data.description) form.setValue("description", data.description);
+      if (data.salary) {
+        const numericSalary = parseInt(data.salary.replace(/[^0-9]/g, ""), 10);
+        if (!isNaN(numericSalary)) form.setValue("salary", numericSalary);
+      }
+      if (data.contactEmail) form.setValue("contactEmail", data.contactEmail);
+      if (data.requirements) form.setValue("requirements", data.requirements);
+      setActiveTab("manual");
+      toast({ title: "Fields populated", description: `Extracted from ${data.source || "URL"}. Review and click Analyze.` });
+    } catch (err: any) {
+      toast({ title: "Scrape failed", description: err.message || "Could not fetch the URL.", variant: "destructive" });
+    } finally {
+      setIsScraping(false);
+    }
+  };
 
   const onSubmit = (data: JobPosting) => {
     onAnalyze(data);
@@ -524,7 +562,7 @@ function JobInputForm({
         </div>
       </CardHeader>
       <CardContent>
-        <Tabs defaultValue="manual" className="w-full">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid w-full grid-cols-2 mb-6">
             <TabsTrigger value="manual" data-testid="tab-manual-entry">
               Manual Entry
@@ -535,11 +573,42 @@ function JobInputForm({
           </TabsList>
 
           <TabsContent value="url">
-            <div className="text-center py-12 text-muted-foreground">
-              <ScanLine className="w-10 h-10 mx-auto mb-3 opacity-30" />
-              <p className="text-sm font-medium">URL analysis coming soon</p>
-              <p className="text-xs mt-1 text-muted-foreground/60">
-                Use manual entry for now
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Paste a job posting URL and we'll extract the details into the form for you.
+              </p>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="https://www.linkedin.com/jobs/view/..."
+                    value={jobUrl}
+                    onChange={(e) => setJobUrl(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleScrapeUrl(); } }}
+                    className="pl-9"
+                    data-testid="input-job-url"
+                  />
+                </div>
+                <Button
+                  onClick={handleScrapeUrl}
+                  disabled={isScraping}
+                  data-testid="button-fetch-url"
+                >
+                  {isScraping ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Fetching
+                    </>
+                  ) : (
+                    <>
+                      <ScanLine className="w-4 h-4 mr-2" />
+                      Extract
+                    </>
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground/60">
+                Supports LinkedIn, Indeed, Glassdoor, ZipRecruiter, and most job boards. Results are auto-filled into the form for review.
               </p>
             </div>
           </TabsContent>

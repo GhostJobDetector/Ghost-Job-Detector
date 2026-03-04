@@ -734,6 +734,162 @@ export async function registerRoutes(
   await setupAuth(app);
   registerAuthRoutes(app);
 
+  function extractJobDataFromHtml(html: string, url: string): {
+    title: string;
+    company: string;
+    description: string;
+    salary?: string;
+    contactEmail?: string;
+    requirements?: string;
+    source: string;
+  } {
+    function extractMeta(name: string): string {
+      const patterns = [
+        new RegExp(`<meta[^>]*(?:name|property)=["']${name}["'][^>]*content=["']([^"']*)["']`, "i"),
+        new RegExp(`<meta[^>]*content=["']([^"']*)["'][^>]*(?:name|property)=["']${name}["']`, "i"),
+      ];
+      for (const p of patterns) {
+        const m = html.match(p);
+        if (m?.[1]) return m[1].trim();
+      }
+      return "";
+    }
+
+    function stripTags(s: string): string {
+      return s
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/&nbsp;/g, " ")
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&quot;/g, '"')
+        .replace(/&#39;/g, "'")
+        .replace(/\s+/g, " ")
+        .trim();
+    }
+
+    function extractBetween(startPattern: RegExp, endPattern: RegExp): string {
+      const startMatch = html.match(startPattern);
+      if (!startMatch) return "";
+      const startIdx = startMatch.index! + startMatch[0].length;
+      const rest = html.slice(startIdx);
+      const endMatch = rest.match(endPattern);
+      const chunk = endMatch ? rest.slice(0, endMatch.index) : rest.slice(0, 5000);
+      return stripTags(chunk).slice(0, 3000);
+    }
+
+    let title = "";
+    let company = "";
+    let description = "";
+    let salary = "";
+    let requirements = "";
+
+    const jsonLdMatches = html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+    for (const m of jsonLdMatches) {
+      try {
+        const data = JSON.parse(m[1]);
+        const job = data["@type"] === "JobPosting" ? data : (Array.isArray(data["@graph"]) ? data["@graph"].find((i: any) => i["@type"] === "JobPosting") : null);
+        if (job) {
+          title = title || job.title || "";
+          company = company || job.hiringOrganization?.name || "";
+          description = description || stripTags(job.description || "");
+          if (job.baseSalary) {
+            const bs = job.baseSalary;
+            const val = bs.value;
+            if (typeof val === "object" && val.minValue && val.maxValue) {
+              salary = `${val.minValue}-${val.maxValue} ${bs.currency || "USD"}`;
+            } else if (typeof val === "number") {
+              salary = `${val} ${bs.currency || "USD"}`;
+            }
+          }
+          if (job.qualifications) requirements = stripTags(job.qualifications);
+          if (job.experienceRequirements) requirements = requirements ? `${requirements}\n${stripTags(job.experienceRequirements)}` : stripTags(job.experienceRequirements);
+        }
+      } catch {}
+    }
+
+    if (!title) {
+      title = extractMeta("og:title") || extractMeta("twitter:title");
+      if (!title) {
+        const titleMatch = html.match(/<title[^>]*>([^<]*)<\/title>/i);
+        title = titleMatch ? titleMatch[1].trim() : "";
+      }
+    }
+
+    const isLinkedIn = url.includes("linkedin.com");
+    const isIndeed = url.includes("indeed.com");
+    const isGlassdoor = url.includes("glassdoor.com");
+
+    if (!company) {
+      if (isLinkedIn) {
+        const m = html.match(/class="[^"]*company[^"]*"[^>]*>([^<]+)/i);
+        if (m) company = stripTags(m[1]);
+      }
+      if (!company) {
+        const m = html.match(/<meta[^>]*name=["']author["'][^>]*content=["']([^"']+)["']/i);
+        if (m) company = m[1].trim();
+      }
+    }
+
+    if (!description) {
+      const descSelectors = [
+        /<div[^>]*class="[^"]*job[-_]?description[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+        /<div[^>]*id="[^"]*job[-_]?description[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+        /<section[^>]*class="[^"]*description[^"]*"[^>]*>([\s\S]*?)<\/section>/i,
+        /<div[^>]*class="[^"]*posting[-_]?description[^"]*"[^>]*>([\s\S]*?)<\/div>/i,
+      ];
+      for (const sel of descSelectors) {
+        const m = html.match(sel);
+        if (m?.[1]) {
+          description = stripTags(m[1]).slice(0, 3000);
+          break;
+        }
+      }
+      if (!description) {
+        description = extractMeta("og:description") || extractMeta("description") || "";
+      }
+    }
+
+    if (!salary) {
+      const salaryMatch = html.match(/\$[\d,]+(?:\s*[-–]\s*\$[\d,]+)?(?:\s*(?:per|\/)\s*(?:year|annum|yr|hour|hr))?/i);
+      if (salaryMatch) salary = salaryMatch[0];
+    }
+
+    const emailMatch = html.match(/[\w.+-]+@[\w.-]+\.\w{2,}/);
+    const contactEmail = emailMatch ? emailMatch[0] : "";
+
+    if (!requirements) {
+      const reqSections = [
+        /<(?:div|section|ul)[^>]*class="[^"]*(?:requirement|qualification)[^"]*"[^>]*>([\s\S]*?)<\/(?:div|section|ul)>/i,
+      ];
+      for (const sel of reqSections) {
+        const m = html.match(sel);
+        if (m?.[1]) {
+          requirements = stripTags(m[1]).slice(0, 2000);
+          break;
+        }
+      }
+    }
+
+    let source = "url";
+    if (isLinkedIn) source = "linkedin";
+    else if (isIndeed) source = "indeed";
+    else if (isGlassdoor) source = "glassdoor";
+    else if (url.includes("ziprecruiter.com")) source = "ziprecruiter";
+
+    return {
+      title: title.slice(0, 200),
+      company: company.slice(0, 200),
+      description: description.slice(0, 5000),
+      salary: salary || undefined,
+      contactEmail: contactEmail || undefined,
+      requirements: requirements ? requirements.slice(0, 3000) : undefined,
+      source,
+    };
+  }
+
   function isAllowedOrigin(origin: string | undefined): boolean {
     if (!origin) return false;
     if (origin.startsWith("chrome-extension://")) return true;
@@ -754,6 +910,53 @@ export async function registerRoutes(
       res.setHeader("Access-Control-Allow-Headers", "Content-Type");
     }
   }
+
+  app.post("/api/scrape-url", async (req: any, res) => {
+    try {
+      const { url } = req.body;
+      if (!url || typeof url !== "string") {
+        return res.status(400).json({ error: "URL is required" });
+      }
+
+      try {
+        new URL(url);
+      } catch {
+        return res.status(400).json({ error: "Invalid URL format" });
+      }
+
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 15000);
+
+      try {
+        const response = await fetch(url, {
+          signal: controller.signal,
+          headers: {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+          },
+        });
+        clearTimeout(timeout);
+
+        if (!response.ok) {
+          return res.status(400).json({ error: `Failed to fetch URL (status ${response.status})` });
+        }
+
+        const html = await response.text();
+        const extracted = extractJobDataFromHtml(html, url);
+
+        return res.json(extracted);
+      } catch (fetchErr: any) {
+        clearTimeout(timeout);
+        if (fetchErr.name === "AbortError") {
+          return res.status(408).json({ error: "Request timed out fetching the URL" });
+        }
+        return res.status(400).json({ error: `Could not fetch URL: ${fetchErr.message}` });
+      }
+    } catch (err: any) {
+      return res.status(500).json({ error: "Failed to scrape URL" });
+    }
+  });
 
   app.options("/api/analyze", (req, res) => {
     setCorsHeaders(req, res);

@@ -529,7 +529,7 @@ function JobInputForm({
             <TabsTrigger value="manual" data-testid="tab-manual-entry">
               Manual Entry
             </TabsTrigger>
-            <TabsTrigger value="url" data-testid="tab-url-entry" disabled>
+            <TabsTrigger value="url" data-testid="tab-url-entry">
               From URL
             </TabsTrigger>
           </TabsList>

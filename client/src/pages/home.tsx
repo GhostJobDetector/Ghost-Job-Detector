@@ -935,7 +935,7 @@ export default function Home() {
               <span>Ghost Job Detector</span>
             </div>
             <p>
-              Guidance only. Always verify through official channels.
+              Insights are generated from publicly available job listings using automated analysis.
             </p>
           </div>
         </div>

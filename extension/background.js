@@ -1,4 +1,4 @@
-const DEFAULT_API_URL = "";
+const DEFAULT_API_URL = "https://ghost-job-detector.replit.app";
 
 chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.sync.get(["apiBaseUrl"], (result) => {

@@ -19,8 +19,8 @@ saveBtn.addEventListener("click", () => {
 
   url = url.replace(/\/+$/, "");
 
-  if (!url.startsWith("https://") && !url.startsWith("http://")) {
-    statusEl.textContent = "URL must start with https:// or http://";
+  if (!url.startsWith("https://")) {
+    statusEl.textContent = "URL must start with https://";
     statusEl.className = "status error";
     return;
   }

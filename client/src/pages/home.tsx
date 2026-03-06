@@ -929,15 +929,9 @@ export default function Home() {
 
       <footer className="border-t mt-16">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-            <div className="flex items-center gap-1.5">
-              <Ghost className="w-3.5 h-3.5" />
-              <span>Ghost Job Detector</span>
-            </div>
-            <p>
-              Insights are generated from publicly available job listings using automated analysis.
-            </p>
-          </div>
+          <p className="text-xs text-muted-foreground text-center" data-testid="text-footer-disclaimer">
+            Insights are generated from publicly available job listings using automated analysis.
+          </p>
         </div>
       </footer>
     </div>

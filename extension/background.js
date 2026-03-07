@@ -1,11 +1,60 @@
 const DEFAULT_API_URL = "https://ghostjobdetector.org";
 
+const JOB_SITE_PATTERNS = [
+  { host: "linkedin.com", pathIncludes: "/jobs/" },
+  { host: "indeed.com", pathIncludes: "/viewjob" },
+  { host: "indeed.com", pathIncludes: "/rc/clk" },
+  { host: "indeed.com", pathIncludes: "/jobs" },
+  { host: "glassdoor.com", pathIncludes: "/job-listing" },
+  { host: "glassdoor.com", pathIncludes: "/Job" },
+  { host: "ziprecruiter.com", pathIncludes: "/jobs/" },
+  { host: "ziprecruiter.com", pathIncludes: "/c/" },
+];
+
+function isJobSiteUrl(url) {
+  if (!url) return false;
+  try {
+    const parsed = new URL(url);
+    for (const pattern of JOB_SITE_PATTERNS) {
+      if (parsed.hostname.includes(pattern.host) && parsed.pathname.includes(pattern.pathIncludes)) {
+        return true;
+      }
+    }
+  } catch {}
+  return false;
+}
+
+function updateBadge(tabId, url) {
+  if (isJobSiteUrl(url)) {
+    chrome.action.setBadgeText({ text: "!", tabId });
+    chrome.action.setBadgeBackgroundColor({ color: "#2563EB", tabId });
+    chrome.action.setBadgeTextColor({ color: "#FFFFFF", tabId });
+  } else {
+    chrome.action.setBadgeText({ text: "", tabId });
+  }
+}
+
 chrome.runtime.onInstalled.addListener(() => {
   chrome.storage.sync.get(["apiBaseUrl"], (result) => {
     if (!result.apiBaseUrl) {
       chrome.storage.sync.set({ apiBaseUrl: DEFAULT_API_URL });
     }
   });
+});
+
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.status === "complete" && tab.url) {
+    updateBadge(tabId, tab.url);
+  }
+});
+
+chrome.tabs.onActivated.addListener(async (activeInfo) => {
+  try {
+    const tab = await chrome.tabs.get(activeInfo.tabId);
+    if (tab.url) {
+      updateBadge(tab.id, tab.url);
+    }
+  } catch {}
 });
 
 function getApiBase() {
@@ -89,10 +138,39 @@ async function scanTab(tabId) {
   }
 }
 
+async function checkIfJobPage(tabId) {
+  try {
+    const tab = await chrome.tabs.get(tabId);
+    if (isJobSiteUrl(tab.url)) return true;
+
+    const injected = await ensureContentScript(tabId);
+    if (!injected) return false;
+
+    const response = await chrome.tabs.sendMessage(tabId, { type: "CHECK_JOB_PAGE" });
+    return response?.isJobPage || false;
+  } catch {
+    return false;
+  }
+}
+
 chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
   if (message.type === "ANALYZE_TAB") {
     const tabId = message.tabId;
     scanTab(tabId).then(sendResponse);
     return true;
+  }
+
+  if (message.type === "CHECK_JOB_PAGE") {
+    const tabId = message.tabId;
+    checkIfJobPage(tabId).then((isJobPage) => {
+      sendResponse({ isJobPage });
+    });
+    return true;
+  }
+
+  if (message.type === "JOB_PAGE_DETECTED") {
+    if (sender.tab && sender.tab.id) {
+      updateBadge(sender.tab.id, sender.tab.url);
+    }
   }
 });

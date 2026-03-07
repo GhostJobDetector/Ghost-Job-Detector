@@ -27,6 +27,16 @@ import {
   ArrowRight,
   Link2,
   Smartphone,
+  RefreshCw,
+  Shield,
+  ShieldAlert,
+  ShieldCheck,
+  TrendingDown,
+  TrendingUp,
+  BarChart3,
+  Globe,
+  Calendar,
+  Repeat2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,6 +67,8 @@ import {
   type AnalysisResult,
   type RedFlag,
   type RedFlagSeverity,
+  type RepostDetection,
+  type EmployerReputation,
 } from "@shared/schema";
 
 const severityConfig: Record<
@@ -394,6 +406,200 @@ function AnalysisCategoryCard({
   );
 }
 
+function RepostDetectionSection({ data }: { data: RepostDetection }) {
+  if (!data.isRepost) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.85 }}
+      >
+        <Card>
+          <CardContent className="p-5">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-emerald-500/10 flex items-center justify-center">
+                <CheckCircle className="w-4 h-4 text-emerald-500" />
+              </div>
+              <div>
+                <p className="text-sm font-medium" data-testid="text-repost-status">First time we've seen this listing</p>
+                <p className="text-xs text-muted-foreground">No duplicate or reposted versions detected in our database.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.85 }}
+    >
+      <Card className="border-amber-500/20">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Repeat2 className="w-4 h-4 text-amber-500" />
+              <CardTitle className="text-sm font-medium" data-testid="text-repost-alert">Repost Detected</CardTitle>
+            </div>
+            <Badge variant="secondary" className="text-xs" data-testid="badge-repost-count">
+              Seen {data.repostCount} time{data.repostCount !== 1 ? "s" : ""} before
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0 space-y-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="text-center p-2 rounded-lg bg-muted/50">
+              <div className="text-lg font-semibold tabular-nums" data-testid="text-repost-total">{data.repostCount}</div>
+              <div className="text-xs text-muted-foreground">Previous Posts</div>
+            </div>
+            {data.firstSeen && (
+              <div className="text-center p-2 rounded-lg bg-muted/50">
+                <div className="text-xs font-medium" data-testid="text-first-seen">
+                  {new Date(data.firstSeen).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                </div>
+                <div className="text-xs text-muted-foreground mt-0.5">First Seen</div>
+              </div>
+            )}
+            {data.sites.length > 0 && (
+              <div className="text-center p-2 rounded-lg bg-muted/50">
+                <div className="text-xs font-medium" data-testid="text-repost-sites">{data.sites.join(", ")}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">Sources</div>
+              </div>
+            )}
+          </div>
+
+          {data.similarListings.length > 0 && (
+            <div className="space-y-1.5">
+              <p className="text-xs text-muted-foreground font-medium">Similar Listings</p>
+              {data.similarListings.slice(0, 3).map((listing, idx) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between gap-2 text-xs p-2 rounded bg-muted/30"
+                  data-testid={`similar-listing-${idx}`}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Globe className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                    <span className="truncate">{listing.title || "Untitled"}</span>
+                    <span className="text-muted-foreground flex-shrink-0">{listing.source}</span>
+                  </div>
+                  {listing.ghostScore !== null && (
+                    <Badge variant="outline" className="text-xs flex-shrink-0">
+                      Score: {listing.ghostScore}
+                    </Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+function EmployerReputationSection({ data }: { data: EmployerReputation }) {
+  const getScoreColor = (score: number) => {
+    if (score >= 70) return "text-emerald-500";
+    if (score >= 40) return "text-amber-500";
+    return "text-red-500";
+  };
+
+  const getScoreBg = (score: number) => {
+    if (score >= 70) return "bg-emerald-500";
+    if (score >= 40) return "bg-amber-500";
+    return "bg-red-500";
+  };
+
+  const getScoreLabel = (score: number) => {
+    if (score >= 70) return "Good";
+    if (score >= 40) return "Fair";
+    return "Poor";
+  };
+
+  const ShieldIcon = data.reputationScore >= 70 ? ShieldCheck : data.reputationScore >= 40 ? Shield : ShieldAlert;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: 0.9 }}
+    >
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <ShieldIcon className={`w-4 h-4 ${getScoreColor(data.reputationScore)}`} />
+              <CardTitle className="text-sm font-medium">Employer Reputation</CardTitle>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`text-lg font-bold tabular-nums ${getScoreColor(data.reputationScore)}`} data-testid="text-employer-score">
+                {data.reputationScore}
+              </span>
+              <Badge
+                variant="secondary"
+                className="text-xs"
+                data-testid="badge-employer-rating"
+              >
+                {getScoreLabel(data.reputationScore)}
+              </Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0 space-y-3">
+          <div className="w-full h-2 rounded-full bg-muted overflow-hidden" data-testid="bar-employer-score">
+            <motion.div
+              className={`h-full rounded-full ${getScoreBg(data.reputationScore)}`}
+              initial={{ width: 0 }}
+              animate={{ width: `${data.reputationScore}%` }}
+              transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
+            />
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="text-center p-2 rounded-lg bg-muted/50">
+              <div className="text-sm font-semibold tabular-nums" data-testid="text-total-listings">{data.totalListings}</div>
+              <div className="text-xs text-muted-foreground">Listings</div>
+            </div>
+            <div className="text-center p-2 rounded-lg bg-muted/50">
+              <div className="text-sm font-semibold tabular-nums" data-testid="text-repost-rate">
+                {data.totalListings > 0 ? Math.round((data.repostCount / data.totalListings) * 100) : 0}%
+              </div>
+              <div className="text-xs text-muted-foreground">Repost Rate</div>
+            </div>
+            <div className="text-center p-2 rounded-lg bg-muted/50">
+              <div className="text-sm font-semibold tabular-nums" data-testid="text-avg-ghost">{data.avgGhostScore}</div>
+              <div className="text-xs text-muted-foreground">Avg Ghost Score</div>
+            </div>
+            <div className="text-center p-2 rounded-lg bg-muted/50">
+              <div className="text-sm font-semibold tabular-nums" data-testid="text-high-risk">{data.highRiskCount}</div>
+              <div className="text-xs text-muted-foreground">High Risk</div>
+            </div>
+          </div>
+
+          {(data.perpetualHiring || data.vaguePayCount > 0) && (
+            <div className="flex flex-wrap gap-2">
+              {data.perpetualHiring && (
+                <Badge variant="destructive" className="text-xs" data-testid="badge-perpetual-hiring">
+                  <RefreshCw className="w-3 h-3 mr-1" />
+                  Perpetual Hiring
+                </Badge>
+              )}
+              {data.vaguePayCount > 0 && (
+                <Badge variant="secondary" className="text-xs" data-testid="badge-vague-pay">
+                  {data.vaguePayCount} listings with vague pay
+                </Badge>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
 function ResultsDisplay({ result }: { result: AnalysisResult }) {
   return (
     <motion.div
@@ -472,6 +678,20 @@ function ResultsDisplay({ result }: { result: AnalysisResult }) {
         <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">Detected Issues</h3>
         <RedFlagsSection flags={result.redFlags} />
       </motion.div>
+
+      {result.repostDetection && (
+        <div>
+          <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">Repost Detection</h3>
+          <RepostDetectionSection data={result.repostDetection} />
+        </div>
+      )}
+
+      {result.employerReputation && (
+        <div>
+          <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">Employer Reputation</h3>
+          <EmployerReputationSection data={result.employerReputation} />
+        </div>
+      )}
     </motion.div>
   );
 }

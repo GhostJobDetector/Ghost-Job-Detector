@@ -13,8 +13,10 @@ import { setupAuth, registerAuthRoutes, isAuthenticated } from "./replit_integra
 import { analysisStorage } from "./storage";
 import { analyzeJobWithAI } from "./ghostAI";
 import { db } from "./db";
-import { users, analyses, pageViews } from "@shared/models/auth";
-import { sql, desc, count } from "drizzle-orm";
+import { users, analyses, pageViews, employerScores } from "@shared/models/auth";
+import { sql, desc, count, eq } from "drizzle-orm";
+import { generateFingerprint, generateSimilarityKey, normalizeCompany, detectReposts, storeFingerprint } from "./fingerprint";
+import { updateEmployerScore, getEmployerScore } from "./employerScore";
 
 const ADMIN_USER_ID = "50135034";
 
@@ -1001,19 +1003,69 @@ export async function registerRoutes(
         result = analyzeJobPosting(parseResult.data);
       }
       
-      // Save analysis if user is authenticated
+      const jobData = parseResult.data;
+      const salaryStr = typeof jobData.salary === "number" ? String(jobData.salary) : (jobData.salary || "");
+      const hasVaguePay = !salaryStr || salaryStr.toLowerCase().includes("competitive") || salaryStr.toLowerCase().includes("negotiable");
+
+      try {
+        const fp = generateFingerprint(jobData.title, jobData.company, jobData.description);
+        const simKey = generateSimilarityKey(jobData.title, jobData.company);
+        const normCompany = normalizeCompany(jobData.company);
+
+        const repostData = await detectReposts(fp, simKey, normCompany);
+        result.repostDetection = repostData;
+
+        if (repostData.isRepost && repostData.repostCount >= 3) {
+          result.redFlags.push({
+            severity: "high",
+            message: `This listing has been seen ${repostData.repostCount} times before — a strong signal of a ghost or evergreen posting.`,
+            category: "patterns",
+          });
+        } else if (repostData.isRepost && repostData.repostCount >= 1) {
+          result.redFlags.push({
+            severity: "medium",
+            message: `This listing appears to be a repost (seen ${repostData.repostCount} time${repostData.repostCount > 1 ? "s" : ""} before).`,
+            category: "patterns",
+          });
+        }
+
+        await storeFingerprint({
+          fingerprint: fp,
+          similarityKey: simKey,
+          title: jobData.title,
+          company: jobData.company,
+          normalizedCompany: normCompany,
+          description: jobData.description,
+          location: jobData.location,
+          salary: salaryStr,
+          source: jobData.source,
+          ghostScore: result.ghostScore,
+          riskLevel: result.riskLevel,
+        });
+
+        if (jobData.company) {
+          await updateEmployerScore(jobData.company, result.ghostScore, result.riskLevel, hasVaguePay, repostData.isRepost);
+          const empScore = await getEmployerScore(jobData.company);
+          if (empScore) {
+            result.employerReputation = empScore;
+          }
+        }
+      } catch (fpError) {
+        console.error("Fingerprint/employer score error:", fpError);
+      }
+
       if (req.isAuthenticated && req.isAuthenticated() && req.user?.claims?.sub) {
         try {
           await analysisStorage.saveAnalysis({
             userId: req.user.claims.sub,
-            jobTitle: parseResult.data.title,
-            company: parseResult.data.company,
+            jobTitle: jobData.title,
+            company: jobData.company,
             ghostScore: result.ghostScore,
             riskLevel: result.riskLevel,
             confidence: result.confidence,
             recommendation: result.recommendation,
             redFlagsCount: result.redFlags.length,
-            jobPosting: parseResult.data,
+            jobPosting: jobData,
             analysisResult: result,
           });
         } catch (saveError) {
@@ -1178,6 +1230,21 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Admin stats error:", error);
       return res.status(500).json({ error: "Failed to fetch admin stats" });
+    }
+  });
+
+  app.get("/api/employer/:company", async (req, res) => {
+    setCorsHeaders(req, res);
+    try {
+      const company = decodeURIComponent(req.params.company);
+      const score = await getEmployerScore(company);
+      if (!score) {
+        return res.status(404).json({ error: "No data for this employer" });
+      }
+      return res.json(score);
+    } catch (error) {
+      console.error("Employer score error:", error);
+      return res.status(500).json({ error: "Failed to fetch employer score" });
     }
   });
 

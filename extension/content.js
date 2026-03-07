@@ -397,9 +397,102 @@ function extractJobData() {
   };
 }
 
+function isJobPostingPage() {
+  const host = window.location.hostname;
+  const path = window.location.pathname;
+
+  if (host.includes("linkedin.com") && path.includes("/jobs/")) return true;
+  if (host.includes("indeed.com") && (path.includes("/viewjob") || path.includes("/rc/clk") || path.includes("/jobs"))) return true;
+  if (host.includes("glassdoor.com") && (path.includes("/job-listing") || path.includes("/Job") || path.includes("/partner/jobListing"))) return true;
+  if (host.includes("ziprecruiter.com") && (path.includes("/jobs/") || path.includes("/c/"))) return true;
+
+  if (getJsonLdJobPosting()) return true;
+
+  return false;
+}
+
+function createFloatingIndicator() {
+  if (document.getElementById("ghost-hunter-indicator")) return;
+
+  const indicator = document.createElement("div");
+  indicator.id = "ghost-hunter-indicator";
+  indicator.setAttribute("data-testid", "ghost-hunter-floating-indicator");
+  indicator.innerHTML = `
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+      <path d="M9 10h.01M15 10h.01M12 2a8 8 0 0 0-8 8v12l3-3 2 2 3-3 3 3 2-2 3 3V10a8 8 0 0 0-8-8z"/>
+    </svg>
+    <span>Job posting detected</span>
+  `;
+
+  indicator.style.cssText = `
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 2147483647;
+    background: #111418;
+    color: #E6E8EB;
+    border: 1px solid #2A2D35;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    transition: opacity 0.3s, transform 0.3s;
+    opacity: 0;
+    transform: translateY(10px);
+  `;
+
+  document.body.appendChild(indicator);
+
+  requestAnimationFrame(() => {
+    indicator.style.opacity = "1";
+    indicator.style.transform = "translateY(0)";
+  });
+
+  indicator.addEventListener("click", () => {
+    indicator.style.opacity = "0";
+    indicator.style.transform = "translateY(10px)";
+    setTimeout(() => indicator.remove(), 300);
+  });
+
+  setTimeout(() => {
+    if (indicator.parentNode) {
+      indicator.style.opacity = "0";
+      indicator.style.transform = "translateY(10px)";
+      setTimeout(() => indicator.remove(), 300);
+    }
+  }, 6000);
+}
+
+function autoDetectJobPage() {
+  if (isJobPostingPage()) {
+    createFloatingIndicator();
+    try {
+      chrome.runtime.sendMessage({ type: "JOB_PAGE_DETECTED" });
+    } catch {}
+  }
+}
+
+if (document.readyState === "complete" || document.readyState === "interactive") {
+  setTimeout(autoDetectJobPage, 500);
+} else {
+  window.addEventListener("DOMContentLoaded", () => {
+    setTimeout(autoDetectJobPage, 500);
+  });
+}
+
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.type === "PING") {
     sendResponse({ ok: true });
+    return;
+  }
+  if (msg?.type === "CHECK_JOB_PAGE") {
+    sendResponse({ isJobPage: isJobPostingPage() });
     return;
   }
   if (msg?.type === "SCAN_PAGE") {

@@ -32,6 +32,31 @@ export interface CategoryAnalysis {
   flags: string[];
 }
 
+export interface RepostDetection {
+  isRepost: boolean;
+  repostCount: number;
+  firstSeen: string | null;
+  sites: string[];
+  similarListings: Array<{
+    title: string;
+    source: string;
+    date: string;
+    ghostScore: number | null;
+  }>;
+}
+
+export interface EmployerReputation {
+  company: string;
+  reputationScore: number;
+  totalListings: number;
+  repostCount: number;
+  avgGhostScore: number;
+  highRiskCount: number;
+  vaguePayCount: number;
+  perpetualHiring: boolean;
+  lastUpdated: string | null;
+}
+
 export interface AnalysisResult {
   ghostScore: number;
   confidence: number;
@@ -44,4 +69,6 @@ export interface AnalysisResult {
     postingPatterns: CategoryAnalysis;
     communication: CategoryAnalysis;
   };
+  repostDetection?: RepostDetection;
+  employerReputation?: EmployerReputation;
 }

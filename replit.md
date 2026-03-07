@@ -66,20 +66,33 @@ The fallback analysis logic lives in `server/routes.ts` and uses pattern matchin
 - Enhanced email/domain verification (34 personal, 20 disposable domains)
 - Color-coded severity mapping (critical/high/medium/low)
 
+### Job Fingerprinting & Repost Detection
+- **File**: `server/fingerprint.ts` — SHA-256 fingerprint generation from normalized title+company+description
+- **Table**: `job_fingerprints` — stores every analyzed listing with fingerprint, similarity key, normalized company
+- **Detection**: Exact match (same fingerprint) and fuzzy match (same similarity key = same title+company combo)
+- **API Response**: `repostDetection` field includes `isRepost`, `repostCount`, `firstSeen`, `sites`, `similarListings`
+
+### Employer Reputation Scoring
+- **File**: `server/employerScore.ts` — calculates reputation score (0-100) based on posting behavior
+- **Table**: `employer_scores` — tracks per-employer metrics (total listings, reposts, avg ghost score, high risk count, vague pay count, perpetual hiring flag)
+- **Score Formula**: Base 50, penalize for high repost rate, high avg ghost score, high-risk listings, vague pay ranges, perpetual hiring; reward for low ghost scores
+- **API**: `GET /api/employer/:company` for standalone lookup; also included in analysis response as `employerReputation`
+
 ### Data Flow
 1. User submits job posting data via form
 2. Frontend validates with Zod schema
 3. POST request to /api/analyze endpoint
 4. Server calls AI analysis (primary)
 5. If AI fails, falls back to rule-based analysis
-6. Returns structured AnalysisResult
-7. Frontend displays color-coded results with recommendations
+6. Server generates fingerprint, detects reposts, stores fingerprint, updates employer score
+7. Returns structured AnalysisResult with repostDetection and employerReputation
+8. Frontend displays color-coded results with recommendations, repost detection, and employer reputation
 
 ## External Dependencies
 
 ### Database
 - **ORM**: Drizzle ORM configured for PostgreSQL
-- **Tables**: users, sessions, analyses
+- **Tables**: users, sessions, analyses, job_fingerprints, employer_scores, page_views
 - **Auth**: Replit Auth integration with secure session management
 - **Analysis History**: Persists user analyses with IDOR-protected queries
 - **Migration Tool**: drizzle-kit for schema management
@@ -110,7 +123,8 @@ The fallback analysis logic lives in `server/routes.ts` and uses pattern matchin
 - **Data Extraction**: JSON-LD JobPosting schema (primary), site-specific DOM selectors (fallback), OG meta tags (generic fallback)
 - **API**: Sends extracted job data to configured Ghost Job Detector `/api/analyze` endpoint (HTTPS enforced)
 - **CORS**: Backend has CORS headers on `/api/analyze` to allow extension requests
-- **Security**: All dynamic content in popup uses escapeHtml() to prevent XSS
+- **Auto-Scan**: Extension auto-detects job pages and scans when popup opens; badge shows "!" on job pages
+- **Security**: All dynamic content in popup uses safe DOM methods to prevent XSS
 - **Installation**: Load unpacked in Chrome (chrome://extensions > Developer mode > Load unpacked > select /extension folder)
 
 ### Security Middleware

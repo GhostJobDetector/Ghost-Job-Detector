@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "Ghost Job Detector",
-  "version": "1.0.1",
-  "description": "Analyze job postings for red flags, scam indicators, and ghost jobs.",
+  "name": "Ghost Hunter Mode",
+  "version": "1.0.2",
+  "description": "Activate Ghost Hunter Mode — scan job postings for red flags, scam indicators, and ghost jobs.",
   "permissions": ["storage", "activeTab", "scripting"],
   "host_permissions": [
     "https://www.linkedin.com/*",

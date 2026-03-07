@@ -9,7 +9,7 @@
     "https://www.indeed.com/*",
     "https://www.glassdoor.com/*",
     "https://www.ziprecruiter.com/*",
-    "https://ghost-job-detector.replit.app/*"
+    "https://ghostjobdetector.org/*"
   ],
   "content_scripts": [
     {

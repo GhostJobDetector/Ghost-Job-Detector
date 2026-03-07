@@ -286,28 +286,32 @@ function analyzeContent(job: JobPosting): { score: number; flags: string[] } {
     }
   }
 
-  if (job.salary) {
+  const numericSalary = typeof job.salary === "number" ? job.salary
+    : typeof job.salary === "string" ? parseFloat(job.salary.replace(/[^0-9.]/g, "")) || null
+    : null;
+
+  if (numericSalary) {
     const marketRate = getMarketRate(job.title);
-    const salaryFormatted = `$${job.salary.toLocaleString()}`;
+    const salaryFormatted = `$${numericSalary.toLocaleString()}`;
     const medianFormatted = `$${marketRate.median.toLocaleString()}`;
     const rangeFormatted = `$${marketRate.low.toLocaleString()}-$${marketRate.high.toLocaleString()}`;
 
-    if (job.salary > marketRate.high * 1.5) {
+    if (numericSalary > marketRate.high * 1.5) {
       score += 25;
       flags.push(
         `Salary (${salaryFormatted}) is far above market range (${rangeFormatted}) - likely bait`
       );
-    } else if (job.salary > marketRate.high) {
+    } else if (numericSalary > marketRate.high) {
       score += 12;
       flags.push(
         `Salary (${salaryFormatted}) is above typical market ceiling (${rangeFormatted})`
       );
-    } else if (job.salary > 0 && job.salary < marketRate.low * 0.6) {
+    } else if (numericSalary > 0 && numericSalary < marketRate.low * 0.6) {
       score += 18;
       flags.push(
         `Salary (${salaryFormatted}) is well below market floor (${rangeFormatted}) - possible exploitative offer`
       );
-    } else if (job.salary > 0 && job.salary < marketRate.low) {
+    } else if (numericSalary > 0 && numericSalary < marketRate.low) {
       score += 10;
       flags.push(
         `Salary (${salaryFormatted}) is below typical market range (${rangeFormatted})`
@@ -594,10 +598,14 @@ function assessCommunication(job: JobPosting): { score: number; flags: string[] 
     flags.push("Text-only communication is unusual for legitimate job postings");
   }
 
-  if (job.responseTime !== undefined && job.responseTime < 1) {
+  const numericResponseTime = typeof job.responseTime === "number" ? job.responseTime
+    : typeof job.responseTime === "string" ? parseFloat(job.responseTime) || undefined
+    : undefined;
+
+  if (numericResponseTime !== undefined && numericResponseTime < 1) {
     score += 25;
     flags.push("Immediate job offer without proper interview process");
-  } else if (job.responseTime !== undefined && job.responseTime < 4) {
+  } else if (numericResponseTime !== undefined && numericResponseTime < 4) {
     score += 10;
     flags.push("Very quick response time may indicate lack of proper vetting");
   }

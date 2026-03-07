@@ -16,9 +16,37 @@ function getApiBase() {
   });
 }
 
+async function ensureContentScript(tabId) {
+  try {
+    await chrome.tabs.sendMessage(tabId, { type: "PING" });
+    return true;
+  } catch {
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId },
+        files: ["content.js"],
+      });
+      return true;
+    } catch (err) {
+      console.error("Failed to inject content script:", err);
+      return false;
+    }
+  }
+}
+
 async function scanTab(tabId) {
   try {
-    const [response] = await chrome.tabs.sendMessage(tabId, { type: "SCAN_PAGE" }).then(r => [r]).catch(() => [null]);
+    const injected = await ensureContentScript(tabId);
+    if (!injected) {
+      return { error: "Cannot access this page. Make sure you're on a job posting page (not a browser internal page)." };
+    }
+
+    let response = null;
+    try {
+      response = await chrome.tabs.sendMessage(tabId, { type: "SCAN_PAGE" });
+    } catch {
+      return { error: "Could not communicate with the page. Try refreshing the page and scanning again." };
+    }
 
     if (!response || !response.ok) {
       return { error: "Could not extract job data from this page." };

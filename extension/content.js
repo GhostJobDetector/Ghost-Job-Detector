@@ -28,6 +28,20 @@ function safeJsonParse(text) {
   try { return JSON.parse(text); } catch { return null; }
 }
 
+function queryText(selectors) {
+  if (typeof selectors === "string") selectors = [selectors];
+  for (const sel of selectors) {
+    try {
+      const el = document.querySelector(sel);
+      if (el) {
+        const text = cleanText(el.innerText || el.textContent || "");
+        if (text) return text;
+      }
+    } catch {}
+  }
+  return "";
+}
+
 function getJsonLdJobPosting() {
   const scripts = Array.from(document.querySelectorAll('script[type="application/ld+json"]'));
   for (const s of scripts) {
@@ -57,7 +71,7 @@ function extractFromJsonLd() {
   const title = cleanText(jp.title || "");
   const desc = cleanText(jp.description || "");
   const org = jp.hiringOrganization || jp.organization || {};
-  const company = cleanText(org.name || "");
+  const company = cleanText(typeof org === "string" ? org : (org.name || ""));
 
   let salary = "";
   const baseSalary = jp.baseSalary;
@@ -66,8 +80,30 @@ function extractFromJsonLd() {
     if (val && typeof val === "object") salary = cleanText(val.value || "");
     if (typeof val === "string") salary = cleanText(val);
   }
+  if (!salary && jp.estimatedSalary) {
+    const est = Array.isArray(jp.estimatedSalary) ? jp.estimatedSalary[0] : jp.estimatedSalary;
+    if (est && typeof est === "object") {
+      const parts = [];
+      if (est.currency) parts.push(est.currency);
+      if (est.value && typeof est.value === "object") {
+        if (est.value.minValue) parts.push(est.value.minValue);
+        if (est.value.maxValue) parts.push("-", est.value.maxValue);
+      }
+      if (parts.length) salary = parts.join(" ");
+    }
+  }
 
-  return { title, company, description: desc, salary };
+  let location = "";
+  if (jp.jobLocation) {
+    const loc = Array.isArray(jp.jobLocation) ? jp.jobLocation[0] : jp.jobLocation;
+    if (loc && loc.address) {
+      const addr = loc.address;
+      const locParts = [addr.addressLocality, addr.addressRegion, addr.addressCountry].filter(Boolean);
+      location = locParts.join(", ");
+    }
+  }
+
+  return { title, company, description: desc, salary, location };
 }
 
 function extractSiteSpecific() {
@@ -76,18 +112,37 @@ function extractSiteSpecific() {
   if (host.includes("linkedin.com")) {
     return {
       title: pickFirst(
-        document.querySelector("h1")?.innerText,
+        queryText([
+          'h1.t-24',
+          'h1.topcard__title',
+          'h1.job-details-jobs-unified-top-card__job-title',
+          'h1[class*="job-title"]',
+          '.jobs-unified-top-card__job-title',
+          'h1',
+        ]),
         getMeta("og:title"),
         document.title
       ),
       company: pickFirst(
-        document.querySelector('[data-tracking-control-name="public_jobs_topcard-org-name"]')?.innerText,
-        document.querySelector(".topcard__org-name-link")?.innerText,
-        document.querySelector(".topcard__org-name-link")?.textContent
+        queryText([
+          '.jobs-unified-top-card__company-name a',
+          '.jobs-unified-top-card__company-name',
+          'a[data-tracking-control-name="public_jobs_topcard-org-name"]',
+          '.topcard__org-name-link',
+          'a.topcard__org-name-link',
+          '.job-details-jobs-unified-top-card__company-name a',
+          '[data-tracking-control-name="public_jobs_topcard-org-name"]',
+        ])
       ),
       description: pickFirst(
-        document.querySelector(".description__text")?.innerText,
-        document.querySelector('[data-automation-id="jobPostingDescription"]')?.innerText
+        queryText([
+          '.jobs-description__content',
+          '.jobs-description-content__text',
+          '.description__text',
+          '.show-more-less-html__markup',
+          '#job-details',
+          '[data-automation-id="jobPostingDescription"]',
+        ])
       )
     };
   }
@@ -95,16 +150,28 @@ function extractSiteSpecific() {
   if (host.includes("indeed.com")) {
     return {
       title: pickFirst(
-        document.querySelector('h1[data-testid="jobsearch-JobInfoHeader-title"]')?.innerText,
-        document.querySelector("h1")?.innerText,
+        queryText([
+          'h1[data-testid="jobsearch-JobInfoHeader-title"]',
+          '.jobsearch-JobInfoHeader-title',
+          'h1',
+        ]),
         getMeta("og:title")
       ),
       company: pickFirst(
-        document.querySelector('[data-testid="inlineHeader-companyName"]')?.innerText,
-        document.querySelector('[data-testid="company-name"]')?.innerText
+        queryText([
+          '[data-testid="inlineHeader-companyName"] a',
+          '[data-testid="inlineHeader-companyName"]',
+          '[data-testid="company-name"]',
+          '[data-company-name="true"]',
+          '.jobsearch-CompanyInfoWithoutHeaderImage a',
+        ])
       ),
       description: pickFirst(
-        document.querySelector("#jobDescriptionText")?.innerText
+        queryText([
+          '#jobDescriptionText',
+          '.jobsearch-JobComponent-description',
+          '#jobDescriptionSection',
+        ])
       )
     };
   }
@@ -112,16 +179,26 @@ function extractSiteSpecific() {
   if (host.includes("glassdoor.com")) {
     return {
       title: pickFirst(
-        document.querySelector('[data-test="job-title"]')?.innerText,
-        document.querySelector("h1")?.innerText,
+        queryText([
+          '[data-test="job-title"]',
+          '.css-1vg6q84',
+          'h1',
+        ]),
         getMeta("og:title")
       ),
       company: pickFirst(
-        document.querySelector('[data-test="employer-name"]')?.innerText,
-        document.querySelector('[data-test="employerName"]')?.innerText
+        queryText([
+          '[data-test="employer-name"]',
+          '[data-test="employerName"]',
+          '.css-87ung5',
+        ])
       ),
       description: pickFirst(
-        document.querySelector('[data-test="jobDescriptionContent"]')?.innerText
+        queryText([
+          '[data-test="jobDescriptionContent"]',
+          '.jobDescriptionContent',
+          '#JobDescriptionContainer',
+        ])
       )
     };
   }
@@ -129,17 +206,28 @@ function extractSiteSpecific() {
   if (host.includes("ziprecruiter.com")) {
     return {
       title: pickFirst(
-        document.querySelector("h1")?.innerText,
+        queryText([
+          'h1',
+          '.job_title',
+        ]),
         getMeta("og:title"),
         document.title
       ),
       company: pickFirst(
-        document.querySelector('[data-testid="company_name"]')?.innerText,
-        document.querySelector(".jobList-introMeta")?.innerText
+        queryText([
+          '[data-testid="company_name"]',
+          '.hiring_company_text',
+          '.jobList-introMeta',
+          'a[data-testid="job-detail-company-name"]',
+        ])
       ),
       description: pickFirst(
-        document.querySelector('[data-testid="job_description"]')?.innerText,
-        document.querySelector(".jobDescriptionSection")?.innerText
+        queryText([
+          '[data-testid="job_description"]',
+          '.jobDescriptionSection',
+          '#job_description',
+          '.job_description',
+        ])
       )
     };
   }
@@ -151,9 +239,16 @@ function extractGenericFallback() {
   const title = pickFirst(getMeta("og:title"), document.title);
   const company = pickFirst(getMeta("og:site_name"), getMeta("author"));
 
-  const main = document.querySelector("main") || document.body;
-  const text = cleanText(main?.innerText || "");
-  const description = text.slice(0, 2500);
+  const descEl = document.querySelector('[class*="description"]') ||
+    document.querySelector('[id*="description"]') ||
+    document.querySelector('[class*="job-detail"]') ||
+    document.querySelector('[id*="job-detail"]') ||
+    document.querySelector("article") ||
+    document.querySelector("main") ||
+    document.body;
+
+  const text = cleanText(descEl?.innerText || "");
+  const description = text.slice(0, 4000);
 
   return { title, company, description };
 }
@@ -168,7 +263,8 @@ function extractJobData() {
       title: cleanText(fromSite.title),
       company: cleanText(fromSite.company),
       description: cleanText(fromSite.description),
-      salary: cleanText(fromSite.salary || "")
+      salary: cleanText(fromSite.salary || ""),
+      location: cleanText(fromSite.location || "")
     };
   }
 
@@ -177,11 +273,16 @@ function extractJobData() {
     title: cleanText(fromGeneric.title),
     company: cleanText(fromGeneric.company),
     description: cleanText(fromGeneric.description),
-    salary: cleanText(fromGeneric.salary || "")
+    salary: cleanText(fromGeneric.salary || ""),
+    location: cleanText(fromGeneric.location || "")
   };
 }
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (msg?.type === "PING") {
+    sendResponse({ ok: true });
+    return;
+  }
   if (msg?.type === "SCAN_PAGE") {
     const data = extractJobData();
     sendResponse({ ok: true, data });

@@ -796,7 +796,7 @@ export default function Home() {
             <Link href="/">
               <div className="flex items-center gap-2.5 cursor-pointer" data-testid="link-home">
                 <Ghost className="w-5 h-5" />
-                <span className="text-sm font-semibold tracking-tight">Ghost Job Detector</span>
+                <span className="text-sm font-semibold tracking-tight text-teal-600 dark:text-teal-400">Ghost Job Detector</span>
               </div>
             </Link>
             <div className="flex items-center gap-1">

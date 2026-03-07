@@ -881,8 +881,8 @@ export default function Home() {
                   <p className="mt-4 text-lg text-muted-foreground leading-relaxed" data-testid="text-hero-subtitle">
                     Scan job postings and uncover ghost listings, hiring red flags, and scams before you apply.
                   </p>
-                  <p className="mt-3 text-sm text-muted-foreground/80 italic leading-relaxed" data-testid="text-hero-brand">
-                    Data-driven. Investigative. Built to empower applicants — so you apply with confidence, not hope.
+                  <p className="mt-3 text-sm text-teal-600 dark:text-teal-400 italic leading-relaxed" data-testid="text-hero-brand">
+                    The job market shouldn't feel like chasing ghosts. GhostJobDetector helps you see which opportunities are real.
                   </p>
                 </motion.div>
               </div>

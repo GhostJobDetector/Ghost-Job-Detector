@@ -8,6 +8,7 @@ import Home from "@/pages/home";
 import History from "@/pages/history";
 import Admin from "@/pages/admin";
 import ExtensionPage from "@/pages/extension";
+import AboutPage from "@/pages/about";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/history" component={History} />
       <Route path="/admin" component={Admin} />
       <Route path="/extension" component={ExtensionPage} />
+      <Route path="/about" component={AboutPage} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -1021,6 +1021,15 @@ export default function Home() {
               </div>
             </Link>
             <div className="flex items-center gap-1">
+              <Link href="/about">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  data-testid="button-about"
+                >
+                  About
+                </Button>
+              </Link>
               <Link href="/extension">
                 <Button
                   variant="ghost"

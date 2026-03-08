@@ -45,6 +45,9 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
   if (changeInfo.status === "complete" && tab.url) {
     updateBadge(tabId, tab.url);
+    if (isJobSiteUrl(tab.url)) {
+      ensureContentScript(tabId).catch(() => {});
+    }
   }
 });
 

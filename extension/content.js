@@ -400,11 +400,12 @@ function extractJobData() {
 function isJobPostingPage() {
   const host = window.location.hostname;
   const path = window.location.pathname;
+  const href = window.location.href;
 
-  if (host.includes("linkedin.com") && path.includes("/jobs/")) return true;
-  if (host.includes("indeed.com") && (path.includes("/viewjob") || path.includes("/rc/clk") || path.includes("/jobs"))) return true;
-  if (host.includes("glassdoor.com") && (path.includes("/job-listing") || path.includes("/Job") || path.includes("/partner/jobListing"))) return true;
-  if (host.includes("ziprecruiter.com") && (path.includes("/jobs/") || path.includes("/c/"))) return true;
+  if (host.includes("linkedin.com") && (path.includes("/jobs/") || path.includes("/jobs?") || href.includes("currentJobId="))) return true;
+  if (host.includes("indeed.com") && (path.includes("/viewjob") || path.includes("/rc/clk") || path.includes("/jobs") || href.includes("vjk="))) return true;
+  if (host.includes("glassdoor.com") && (path.includes("/job-listing") || path.includes("/Job") || path.includes("/partner/jobListing") || path.includes("/job/"))) return true;
+  if (host.includes("ziprecruiter.com") && (path.includes("/jobs/") || path.includes("/c/") || path.includes("/job/"))) return true;
 
   if (getJsonLdJobPosting()) return true;
 
@@ -860,12 +861,34 @@ function showFabResult(result, container, btn, ghostSvg) {
   container.appendChild(panel);
 }
 
+function removeFabIfNotJobPage() {
+  if (!isJobPostingPage()) {
+    const fab = document.getElementById("ghost-hunter-fab");
+    if (fab) {
+      fab.remove();
+      ghostButtonState = "idle";
+    }
+  }
+}
+
 function autoDetectJobPage() {
   if (isJobPostingPage()) {
     createFloatingGhostButton();
     try {
       chrome.runtime.sendMessage({ type: "JOB_PAGE_DETECTED" });
     } catch {}
+  } else {
+    removeFabIfNotJobPage();
+  }
+}
+
+let lastCheckedUrl = "";
+
+function checkForSpaNavigation() {
+  const currentUrl = window.location.href;
+  if (currentUrl !== lastCheckedUrl) {
+    lastCheckedUrl = currentUrl;
+    setTimeout(autoDetectJobPage, 300);
   }
 }
 
@@ -876,6 +899,24 @@ if (document.readyState === "complete" || document.readyState === "interactive")
     setTimeout(autoDetectJobPage, 500);
   });
 }
+
+setInterval(checkForSpaNavigation, 1500);
+
+const origPushState = history.pushState;
+history.pushState = function () {
+  origPushState.apply(this, arguments);
+  setTimeout(autoDetectJobPage, 300);
+};
+
+const origReplaceState = history.replaceState;
+history.replaceState = function () {
+  origReplaceState.apply(this, arguments);
+  setTimeout(autoDetectJobPage, 300);
+};
+
+window.addEventListener("popstate", () => {
+  setTimeout(autoDetectJobPage, 300);
+});
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (msg?.type === "PING") {

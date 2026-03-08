@@ -458,8 +458,8 @@ function createFloatingGhostButton() {
       animation: ghost-fab-enter 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
     }
     #ghost-fab-btn {
-      width: 48px;
-      height: 48px;
+      width: 52px;
+      height: 52px;
       border-radius: 50%;
       border: none;
       background: #111418;
@@ -497,7 +497,7 @@ function createFloatingGhostButton() {
     }
     #ghost-fab-tooltip {
       position: absolute;
-      right: 56px;
+      right: 60px;
       top: 50%;
       transform: translateY(-50%);
       background: #111418;
@@ -519,15 +519,15 @@ function createFloatingGhostButton() {
     }
     #ghost-fab-result {
       position: absolute;
-      right: 56px;
+      right: 60px;
       bottom: 0;
       background: #111418;
       border: 1px solid #2A2D35;
       border-radius: 12px;
-      padding: 14px 16px;
-      font-size: 12px;
+      padding: 16px 18px;
+      font-size: 13px;
       color: #E6E8EB;
-      width: 220px;
+      width: 240px;
       box-shadow: 0 8px 24px rgba(0,0,0,0.35);
       animation: ghost-fab-score-enter 0.3s ease-out forwards;
     }
@@ -565,7 +565,7 @@ function createFloatingGhostButton() {
       line-height: 1;
     }
     .ghost-fab-score-label {
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 600;
       padding: 3px 8px;
       border-radius: 4px;
@@ -585,9 +585,9 @@ function createFloatingGhostButton() {
       transition: width 0.8s ease-out;
     }
     .ghost-fab-meta {
-      font-size: 11px;
+      font-size: 12px;
       color: #9CA3AF;
-      line-height: 1.5;
+      line-height: 1.6;
     }
     .ghost-fab-flags {
       margin-top: 8px;
@@ -595,7 +595,7 @@ function createFloatingGhostButton() {
       border-top: 1px solid #2A2D35;
     }
     .ghost-fab-flag-item {
-      font-size: 11px;
+      font-size: 12px;
       color: #F59E0B;
       display: flex;
       align-items: flex-start;
@@ -617,12 +617,12 @@ function createFloatingGhostButton() {
     }
     .ghost-fab-action-btn {
       flex: 1;
-      padding: 6px;
+      padding: 7px;
       border-radius: 6px;
       border: 1px solid #2A2D35;
       background: transparent;
       color: #E6E8EB;
-      font-size: 11px;
+      font-size: 12px;
       font-weight: 500;
       cursor: pointer;
       text-align: center;
@@ -645,7 +645,7 @@ function createFloatingGhostButton() {
   document.head.appendChild(style);
 
   const fabIconUrl = chrome.runtime.getURL("icons/fab-icon.png");
-  const ghostImg = `<img src="${fabIconUrl}" width="28" height="28" alt="Ghost" style="border-radius:50%;object-fit:contain;image-rendering:crisp-edges;" />`;
+  const ghostImg = `<img src="${fabIconUrl}" width="34" height="34" alt="Ghost" style="border-radius:50%;object-fit:contain;image-rendering:-webkit-optimize-contrast;" />`;
 
   const btn = document.createElement("button");
   btn.id = "ghost-fab-btn";

@@ -7,6 +7,7 @@ import { ErrorBoundary } from "@/components/error-boundary";
 import Home from "@/pages/home";
 import History from "@/pages/history";
 import Admin from "@/pages/admin";
+import ExtensionPage from "@/pages/extension";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -15,6 +16,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/history" component={History} />
       <Route path="/admin" component={Admin} />
+      <Route path="/extension" component={ExtensionPage} />
       <Route component={NotFound} />
     </Switch>
   );

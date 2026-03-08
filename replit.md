@@ -127,6 +127,8 @@ The fallback analysis logic lives in `server/routes.ts` and uses pattern matchin
 - **Auto-Scan**: Extension auto-detects job pages and scans when popup opens; badge shows "!" on job pages
 - **Security**: All dynamic content in popup uses safe DOM methods to prevent XSS
 - **Installation**: Load unpacked in Chrome (chrome://extensions > Developer mode > Load unpacked > select /extension folder)
+- **Extension Page**: `/extension` route — instruction page with download link, installation guide, features, supported sites, FAQ
+- **Download**: `/extension/ghost-hunter-mode.zip` — pre-built zip of the extension for easy download
 
 ### Security Middleware
 - **File**: `server/middleware.ts` - Custom security middleware (no external dependencies)

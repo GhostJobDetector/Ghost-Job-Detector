@@ -37,6 +37,7 @@ import {
   Globe,
   Calendar,
   Repeat2,
+  Chrome,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -1020,6 +1021,16 @@ export default function Home() {
               </div>
             </Link>
             <div className="flex items-center gap-1">
+              <Link href="/extension">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  data-testid="button-get-extension"
+                >
+                  <Chrome className="w-4 h-4 mr-1.5" />
+                  Extension
+                </Button>
+              </Link>
               {result && (
                 <Button
                   variant="ghost"

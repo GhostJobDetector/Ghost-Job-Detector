@@ -436,7 +436,7 @@ function createFloatingGhostButton() {
   style.textContent = `
     @keyframes ghost-fab-pulse {
       0%, 100% { box-shadow: 0 4px 14px rgba(0,0,0,0.25); }
-      50% { box-shadow: 0 4px 20px rgba(45,212,191,0.35); }
+      50% { box-shadow: 0 4px 20px rgba(13,148,136,0.4); }
     }
     @keyframes ghost-fab-spin {
       to { transform: rotate(360deg); }
@@ -463,7 +463,7 @@ function createFloatingGhostButton() {
       border-radius: 50%;
       border: none;
       background: #111418;
-      color: #2DD4BF;
+      color: #0D9488;
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -490,8 +490,8 @@ function createFloatingGhostButton() {
     #ghost-fab-spinner {
       width: 22px;
       height: 22px;
-      border: 2.5px solid rgba(45,212,191,0.2);
-      border-top-color: #2DD4BF;
+      border: 2.5px solid rgba(13,148,136,0.2);
+      border-top-color: #0D9488;
       border-radius: 50%;
       animation: ghost-fab-spin 0.7s linear infinite;
     }
@@ -633,23 +633,24 @@ function createFloatingGhostButton() {
       border-color: #3A3D45;
     }
     .ghost-fab-action-btn.primary {
-      background: #2DD4BF;
-      color: #111418;
-      border-color: #2DD4BF;
+      background: #0D9488;
+      color: #FFFFFF;
+      border-color: #0D9488;
     }
     .ghost-fab-action-btn.primary:hover {
-      background: #14B8A6;
-      border-color: #14B8A6;
+      background: #0F766E;
+      border-color: #0F766E;
     }
   `;
   document.head.appendChild(style);
 
-  const ghostSvg = `<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 10h.01M15 10h.01M12 2a8 8 0 0 0-8 8v12l3-3 2 2 3-3 3 3 2-2 3 3V10a8 8 0 0 0-8-8z"/></svg>`;
+  const fabIconUrl = chrome.runtime.getURL("icons/fab-icon.png");
+  const ghostImg = `<img src="${fabIconUrl}" width="28" height="28" alt="Ghost" style="border-radius:50%;object-fit:contain;image-rendering:crisp-edges;" />`;
 
   const btn = document.createElement("button");
   btn.id = "ghost-fab-btn";
   btn.setAttribute("data-testid", "ghost-fab-btn");
-  btn.innerHTML = ghostSvg;
+  btn.innerHTML = ghostImg;
 
   const tooltip = document.createElement("div");
   tooltip.id = "ghost-fab-tooltip";
@@ -677,7 +678,7 @@ function createFloatingGhostButton() {
     if (!jobData.title && !jobData.company && !jobData.description) {
       ghostButtonState = "idle";
       btn.classList.remove("scanning");
-      btn.innerHTML = ghostSvg;
+      btn.innerHTML = ghostImg;
       tooltip.textContent = "No job data found on this page";
       tooltip.classList.add("visible");
       setTimeout(() => tooltip.classList.remove("visible"), 3000);
@@ -696,7 +697,7 @@ function createFloatingGhostButton() {
         if (!response || response.error) {
           ghostButtonState = "idle";
           btn.classList.remove("scanning");
-          btn.innerHTML = ghostSvg;
+          btn.innerHTML = ghostImg;
           tooltip.textContent = response?.error || "Analysis failed";
           tooltip.classList.add("visible");
           setTimeout(() => tooltip.classList.remove("visible"), 4000);
@@ -715,13 +716,13 @@ function createFloatingGhostButton() {
         btn.style.color = scoreInfo.text;
         btn.innerHTML = `<span style="font-size:16px;font-weight:700;line-height:1;">${result.ghostScore}</span>`;
 
-        showFabResult(result, container, btn, ghostSvg);
+        showFabResult(result, container, btn, ghostImg);
       }
     );
   });
 }
 
-function showFabResult(result, container, btn, ghostSvg) {
+function showFabResult(result, container, btn, ghostImg) {
   const existing = document.getElementById("ghost-fab-result");
   if (existing) existing.remove();
 
@@ -739,9 +740,9 @@ function showFabResult(result, container, btn, ghostSvg) {
     panel.remove();
     ghostButtonState = "idle";
     btn.style.background = "#111418";
-    btn.style.color = "#2DD4BF";
+    btn.style.color = "#0D9488";
     btn.classList.remove("scored");
-    btn.innerHTML = ghostSvg;
+    btn.innerHTML = ghostImg;
   });
   panel.appendChild(closeBtn);
 
@@ -835,9 +836,9 @@ function showFabResult(result, container, btn, ghostSvg) {
     panel.remove();
     ghostButtonState = "idle";
     btn.style.background = "#111418";
-    btn.style.color = "#2DD4BF";
+    btn.style.color = "#0D9488";
     btn.classList.remove("scored");
-    btn.innerHTML = ghostSvg;
+    btn.innerHTML = ghostImg;
   });
 
   const rescanBtn = document.createElement("button");
@@ -848,9 +849,9 @@ function showFabResult(result, container, btn, ghostSvg) {
     panel.remove();
     ghostButtonState = "idle";
     btn.style.background = "#111418";
-    btn.style.color = "#2DD4BF";
+    btn.style.color = "#0D9488";
     btn.classList.remove("scored");
-    btn.innerHTML = ghostSvg;
+    btn.innerHTML = ghostImg;
     btn.click();
   });
 

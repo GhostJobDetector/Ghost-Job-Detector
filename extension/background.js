@@ -11,9 +11,9 @@ const JOB_SITE_PATTERNS = [
   { host: "glassdoor.com", pathIncludes: "/Jobs" },
   { host: "glassdoor.com", pathIncludes: "/job/" },
   { host: "glassdoor.com", pathIncludes: "/job-" },
-  { host: "ziprecruiter.com", pathIncludes: "/jobs/" },
+  { host: "ziprecruiter.com", pathIncludes: "/jobs" },
   { host: "ziprecruiter.com", pathIncludes: "/c/" },
-  { host: "ziprecruiter.com", pathIncludes: "/job/" },
+  { host: "ziprecruiter.com", pathIncludes: "/job" },
   { host: "ziprecruiter.com", pathIncludes: "/k/" },
   { host: "ziprecruiter.com", pathIncludes: "/ojob/" },
 ];

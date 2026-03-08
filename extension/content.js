@@ -294,9 +294,11 @@ function extractSiteSpecific() {
       title: pickFirst(
         queryText([
           'h1.job_title',
-          'h1',
-          '.job_title',
+          'h1[class*="job"]',
+          '[class*="job_title"]',
           '[data-testid="job-title"]',
+          '[class*="JobTitle"]',
+          'h1',
         ]),
         getMeta("og:title"),
         document.title
@@ -306,34 +308,43 @@ function extractSiteSpecific() {
           '[data-testid="company_name"]',
           'a[data-testid="job-detail-company-name"]',
           '.hiring_company_text',
-          '.jobList-introMeta',
           '.hiring_company a',
+          '[class*="company_name"]',
+          '[class*="CompanyName"]',
           '.t-company_name',
           'a.company_name',
+          '.jobList-introMeta',
+          '[class*="hiring_company"]',
         ])
       ),
       description: pickFirst(
         queryText([
           '[data-testid="job_description"]',
-          '.jobDescriptionSection',
+          '[class*="jobDescriptionSection"]',
           '#job_description',
-          '.job_description',
-          '.job_description_text',
+          '[class*="job_description"]',
+          '[class*="JobDescription"]',
+          '[class*="job-description"]',
           '.responsibilities_section',
+          'article',
+          'main [class*="content"]',
         ])
       ),
       salary: pickFirst(
         queryText([
           '.job_salary',
           '[data-testid="salary"]',
-          '.salary_estimate',
+          '[class*="salary"]',
+          '[class*="Salary"]',
+          '[class*="compensation"]',
         ])
       ),
       location: pickFirst(
         queryText([
           '.job_location',
           '[data-testid="location"]',
-          '.location_text',
+          '[class*="location"]',
+          '[class*="Location"]',
         ])
       )
     };
@@ -409,8 +420,10 @@ function isJobPostingPage() {
     if (document.querySelector('[data-test="jobListing"]') || document.querySelector('[data-test="job-title"]') || document.querySelector('[class*="JobDetails"]') || document.querySelector('.jobHeader') || document.querySelector('[data-test="jobDescriptionContent"]') || document.querySelector('#JobDescriptionContainer') || document.querySelector('[class*="jobDescription"]')) return true;
   }
   if (host.includes("ziprecruiter.com")) {
-    if (path.includes("/jobs/") || path.includes("/c/") || path.includes("/job/") || path.includes("/k/") || path.includes("/ojob/")) return true;
-    if (document.querySelector('[class*="job_content"]') || document.querySelector('[data-testid="job-detail"]') || document.querySelector('.jobDescriptionSection') || document.querySelector('#job_description') || document.querySelector('.job_description') || document.querySelector('[class*="job_title"]') || document.querySelector('h1.job_title')) return true;
+    if (path.includes("/jobs") || path.includes("/c/") || path.includes("/job") || path.includes("/k/") || path.includes("/ojob/")) return true;
+    if (href.includes("job_id=") || href.includes("mid=") || href.includes("source=")) return true;
+    const jobEl = document.querySelector('[class*="job_content"]') || document.querySelector('[data-testid="job-detail"]') || document.querySelector('.jobDescriptionSection') || document.querySelector('#job_description') || document.querySelector('.job_description') || document.querySelector('[class*="job_title"]') || document.querySelector('h1.job_title') || document.querySelector('[class*="JobDescription"]') || document.querySelector('[class*="jobCard"]') || document.querySelector('[class*="job-card"]') || document.querySelector('[class*="job_result"]') || document.querySelector('article[class*="job"]') || document.querySelector('[class*="JobPost"]') || document.querySelector('[data-job-id]');
+    if (jobEl) return true;
   }
 
   if (getJsonLdJobPosting()) return true;
@@ -462,6 +475,19 @@ function createFloatingGhostButton() {
       z-index: 2147483647;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       animation: ghost-fab-enter 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+      touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    #ghost-hunter-fab.dragging {
+      animation: none !important;
+      transition: none !important;
+    }
+    #ghost-hunter-fab.dragging #ghost-fab-btn {
+      animation: none !important;
+      transform: scale(1.08);
+      box-shadow: 0 8px 28px rgba(0,0,0,0.45);
+      cursor: grabbing;
     }
     #ghost-fab-btn {
       width: 52px;
@@ -470,7 +496,7 @@ function createFloatingGhostButton() {
       border: none;
       background: #111418;
       color: #0D9488;
-      cursor: pointer;
+      cursor: grab;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -482,9 +508,6 @@ function createFloatingGhostButton() {
     #ghost-fab-btn:hover {
       transform: scale(1.1);
       box-shadow: 0 6px 20px rgba(0,0,0,0.35);
-    }
-    #ghost-fab-btn:active {
-      transform: scale(0.95);
     }
     #ghost-fab-btn.scanning {
       animation: none;
@@ -666,7 +689,59 @@ function createFloatingGhostButton() {
   container.appendChild(tooltip);
   document.body.appendChild(container);
 
-  btn.addEventListener("click", () => {
+  let isDragging = false;
+  let wasDragged = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+  let fabStartX = 0;
+  let fabStartY = 0;
+
+  function onPointerDown(e) {
+    if (ghostButtonState === "scanning") return;
+    isDragging = true;
+    wasDragged = false;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    const rect = container.getBoundingClientRect();
+    fabStartX = rect.left;
+    fabStartY = rect.top;
+    container.classList.add("dragging");
+    e.preventDefault();
+  }
+
+  function onPointerMove(e) {
+    if (!isDragging) return;
+    const dx = e.clientX - dragStartX;
+    const dy = e.clientY - dragStartY;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) wasDragged = true;
+    if (!wasDragged) return;
+    let newX = fabStartX + dx;
+    let newY = fabStartY + dy;
+    const btnSize = 52;
+    newX = Math.max(0, Math.min(window.innerWidth - btnSize, newX));
+    newY = Math.max(0, Math.min(window.innerHeight - btnSize, newY));
+    container.style.left = newX + "px";
+    container.style.top = newY + "px";
+    container.style.right = "auto";
+    container.style.bottom = "auto";
+    e.preventDefault();
+  }
+
+  function onPointerUp() {
+    if (!isDragging) return;
+    isDragging = false;
+    container.classList.remove("dragging");
+  }
+
+  btn.addEventListener("pointerdown", onPointerDown);
+  document.addEventListener("pointermove", onPointerMove);
+  document.addEventListener("pointerup", onPointerUp);
+
+  btn.addEventListener("click", (e) => {
+    if (wasDragged) {
+      wasDragged = false;
+      return;
+    }
     if (ghostButtonState === "scanning") return;
 
     const existingResult = document.getElementById("ghost-fab-result");

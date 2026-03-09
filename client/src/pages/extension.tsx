@@ -261,7 +261,7 @@ export default function ExtensionPage() {
                   ))}
                 </div>
                 <p className="text-xs text-muted-foreground mt-3 text-center">
-                  Also works on any website that includes structured job posting data (JSON-LD schema).
+                  Also works on many other job boards and career pages.
                 </p>
               </CardContent>
             </Card>

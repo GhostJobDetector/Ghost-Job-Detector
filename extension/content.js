@@ -547,18 +547,112 @@ function createFloatingGhostButton() {
       opacity: 1;
     }
     #ghost-fab-result {
-      position: absolute;
-      right: 60px;
-      bottom: 0;
+      position: fixed;
+      bottom: auto;
+      right: auto;
       background: #111418;
       border: 1px solid #2A2D35;
       border-radius: 12px;
       padding: 16px 18px;
       font-size: 13px;
       color: #E6E8EB;
-      width: 240px;
+      width: 340px;
+      max-height: 80vh;
+      overflow-y: auto;
       box-shadow: 0 8px 24px rgba(0,0,0,0.35);
       animation: ghost-fab-score-enter 0.3s ease-out forwards;
+    }
+    #ghost-fab-result::-webkit-scrollbar {
+      width: 4px;
+    }
+    #ghost-fab-result::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    #ghost-fab-result::-webkit-scrollbar-thumb {
+      background: #2A2D35;
+      border-radius: 2px;
+    }
+    .ghost-fab-section {
+      margin-top: 10px;
+      padding-top: 10px;
+      border-top: 1px solid #2A2D35;
+    }
+    .ghost-fab-section-title {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #6B7280;
+      margin-bottom: 8px;
+    }
+    .ghost-fab-stat-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(90px, 1fr));
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .ghost-fab-stat {
+      background: #1A1D25;
+      border-radius: 6px;
+      padding: 8px;
+      text-align: center;
+    }
+    .ghost-fab-stat-value {
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 1.2;
+    }
+    .ghost-fab-stat-label {
+      font-size: 10px;
+      color: #6B7280;
+      margin-top: 2px;
+    }
+    .ghost-fab-similar-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      font-size: 11px;
+      padding: 5px 8px;
+      border-radius: 4px;
+      background: #1A1D25;
+      margin-bottom: 4px;
+    }
+    .ghost-fab-similar-title {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+      min-width: 0;
+    }
+    .ghost-fab-similar-badge {
+      flex-shrink: 0;
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      border: 1px solid #2A2D35;
+      color: #9CA3AF;
+    }
+    .ghost-fab-site-tag {
+      display: inline-block;
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      background: #1A1D25;
+      color: #9CA3AF;
+      margin: 0 4px 4px 0;
+    }
+    .ghost-fab-employer-bar {
+      height: 4px;
+      border-radius: 2px;
+      background: #2A2D35;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .ghost-fab-employer-fill {
+      height: 100%;
+      border-radius: 2px;
+      transition: width 0.6s ease-out;
     }
     #ghost-fab-result-close {
       position: absolute;
@@ -861,30 +955,19 @@ function showFabResult(result, container, btn, ghostImg) {
   const meta = document.createElement("div");
   meta.className = "ghost-fab-meta";
   meta.setAttribute("data-testid", "ghost-fab-meta");
-
-  const parts = [];
-  parts.push("Confidence: " + (result.confidence || 0) + "%");
-  if (result.redFlags && result.redFlags.length > 0) {
-    parts.push(result.redFlags.length + " red flag" + (result.redFlags.length > 1 ? "s" : ""));
-  }
-  if (result.repostDetection && result.repostDetection.isRepost) {
-    parts.push("Repost detected (" + result.repostDetection.repostCount + "x)");
-  }
-  if (result.employerReputation) {
-    parts.push("Employer score: " + result.employerReputation.reputationScore + "/100");
-  }
-  meta.textContent = parts.join(" \u00B7 ");
+  meta.textContent = "Confidence: " + (result.confidence || 0) + "%";
   panel.appendChild(meta);
 
   if (result.redFlags && result.redFlags.length > 0) {
     const flagsDiv = document.createElement("div");
-    flagsDiv.className = "ghost-fab-flags";
-    const topFlags = result.redFlags
-      .filter(f => f.severity === "critical" || f.severity === "high")
-      .slice(0, 3);
-    const showFlags = topFlags.length > 0 ? topFlags : result.redFlags.slice(0, 2);
+    flagsDiv.className = "ghost-fab-section";
 
-    for (const flag of showFlags) {
+    const flagsTitle = document.createElement("div");
+    flagsTitle.className = "ghost-fab-section-title";
+    flagsTitle.textContent = "Red Flags (" + result.redFlags.length + ")";
+    flagsDiv.appendChild(flagsTitle);
+
+    for (const flag of result.redFlags) {
       const item = document.createElement("div");
       item.className = "ghost-fab-flag-item";
       item.setAttribute("data-testid", "ghost-fab-flag");
@@ -897,13 +980,200 @@ function showFabResult(result, container, btn, ghostImg) {
       item.appendChild(dot);
 
       const text = document.createElement("span");
-      const msg = flag.message.length > 80 ? flag.message.substring(0, 77) + "..." : flag.message;
-      text.textContent = msg;
+      text.textContent = flag.message;
       item.appendChild(text);
 
       flagsDiv.appendChild(item);
     }
     panel.appendChild(flagsDiv);
+  }
+
+  if (result.repostDetection) {
+    const repostDiv = document.createElement("div");
+    repostDiv.className = "ghost-fab-section";
+    repostDiv.setAttribute("data-testid", "ghost-fab-repost-section");
+
+    const repostTitle = document.createElement("div");
+    repostTitle.className = "ghost-fab-section-title";
+    repostTitle.textContent = "Repost Detection";
+    repostDiv.appendChild(repostTitle);
+
+    if (!result.repostDetection.isRepost) {
+      const freshMsg = document.createElement("div");
+      freshMsg.style.cssText = "font-size:12px;color:#10B981;display:flex;align-items:center;gap:6px;";
+      freshMsg.innerHTML = '<span style="font-size:14px;">&#10003;</span> First time seen — no duplicates detected';
+      repostDiv.appendChild(freshMsg);
+    } else {
+      const rd = result.repostDetection;
+      const statGrid = document.createElement("div");
+      statGrid.className = "ghost-fab-stat-grid";
+
+      const countStat = document.createElement("div");
+      countStat.className = "ghost-fab-stat";
+      const countVal = document.createElement("div");
+      countVal.className = "ghost-fab-stat-value";
+      countVal.style.color = rd.repostCount >= 3 ? "#EF4444" : "#F59E0B";
+      countVal.textContent = rd.repostCount;
+      const countLabel = document.createElement("div");
+      countLabel.className = "ghost-fab-stat-label";
+      countLabel.textContent = "Times Seen";
+      countStat.appendChild(countVal);
+      countStat.appendChild(countLabel);
+      statGrid.appendChild(countStat);
+
+      if (rd.firstSeen) {
+        const dateStat = document.createElement("div");
+        dateStat.className = "ghost-fab-stat";
+        const dateVal = document.createElement("div");
+        dateVal.className = "ghost-fab-stat-value";
+        dateVal.style.cssText = "font-size:12px;color:#E6E8EB;";
+        dateVal.textContent = new Date(rd.firstSeen).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+        const dateLabel = document.createElement("div");
+        dateLabel.className = "ghost-fab-stat-label";
+        dateLabel.textContent = "First Seen";
+        dateStat.appendChild(dateVal);
+        dateStat.appendChild(dateLabel);
+        statGrid.appendChild(dateStat);
+      }
+
+      if (rd.sites && rd.sites.length > 0) {
+        const sitesStat = document.createElement("div");
+        sitesStat.className = "ghost-fab-stat";
+        const sitesVal = document.createElement("div");
+        sitesVal.className = "ghost-fab-stat-value";
+        sitesVal.style.cssText = "font-size:14px;color:#E6E8EB;";
+        sitesVal.textContent = rd.sites.length;
+        const sitesLabel = document.createElement("div");
+        sitesLabel.className = "ghost-fab-stat-label";
+        sitesLabel.textContent = rd.sites.length === 1 ? "Source" : "Sources";
+        sitesStat.appendChild(sitesVal);
+        sitesStat.appendChild(sitesLabel);
+        statGrid.appendChild(sitesStat);
+      }
+
+      repostDiv.appendChild(statGrid);
+
+      if (rd.sites && rd.sites.length > 0) {
+        const sitesWrap = document.createElement("div");
+        sitesWrap.style.marginBottom = "6px";
+        for (const site of rd.sites) {
+          const tag = document.createElement("span");
+          tag.className = "ghost-fab-site-tag";
+          tag.textContent = site;
+          sitesWrap.appendChild(tag);
+        }
+        repostDiv.appendChild(sitesWrap);
+      }
+
+      if (rd.similarListings && rd.similarListings.length > 0) {
+        const simTitle = document.createElement("div");
+        simTitle.style.cssText = "font-size:10px;color:#6B7280;font-weight:600;margin-bottom:4px;";
+        simTitle.textContent = "Similar Listings";
+        repostDiv.appendChild(simTitle);
+
+        for (const listing of rd.similarListings.slice(0, 5)) {
+          const item = document.createElement("div");
+          item.className = "ghost-fab-similar-item";
+
+          const titleSpan = document.createElement("span");
+          titleSpan.className = "ghost-fab-similar-title";
+          titleSpan.textContent = listing.title || "Untitled";
+          item.appendChild(titleSpan);
+
+          if (listing.source) {
+            const srcBadge = document.createElement("span");
+            srcBadge.className = "ghost-fab-similar-badge";
+            srcBadge.textContent = listing.source;
+            item.appendChild(srcBadge);
+          }
+
+          if (listing.ghostScore !== null && listing.ghostScore !== undefined) {
+            const scoreBadge = document.createElement("span");
+            scoreBadge.className = "ghost-fab-similar-badge";
+            scoreBadge.style.color = listing.ghostScore >= 60 ? "#EF4444" : listing.ghostScore >= 30 ? "#F59E0B" : "#10B981";
+            scoreBadge.textContent = listing.ghostScore + "/100";
+            item.appendChild(scoreBadge);
+          }
+
+          repostDiv.appendChild(item);
+        }
+      }
+    }
+    panel.appendChild(repostDiv);
+  }
+
+  if (result.employerReputation) {
+    const empDiv = document.createElement("div");
+    empDiv.className = "ghost-fab-section";
+    empDiv.setAttribute("data-testid", "ghost-fab-employer-section");
+
+    const empTitle = document.createElement("div");
+    empTitle.className = "ghost-fab-section-title";
+    empTitle.textContent = "Employer Reputation";
+    empDiv.appendChild(empTitle);
+
+    const er = result.employerReputation;
+    const empScoreColor = er.reputationScore >= 70 ? "#10B981" : er.reputationScore >= 40 ? "#F59E0B" : "#EF4444";
+
+    const empStatGrid = document.createElement("div");
+    empStatGrid.className = "ghost-fab-stat-grid";
+
+    const empScoreStat = document.createElement("div");
+    empScoreStat.className = "ghost-fab-stat";
+    const empScoreVal = document.createElement("div");
+    empScoreVal.className = "ghost-fab-stat-value";
+    empScoreVal.style.color = empScoreColor;
+    empScoreVal.textContent = er.reputationScore + "/100";
+    const empScoreLabel = document.createElement("div");
+    empScoreLabel.className = "ghost-fab-stat-label";
+    empScoreLabel.textContent = "Score";
+    empScoreStat.appendChild(empScoreVal);
+    empScoreStat.appendChild(empScoreLabel);
+    empStatGrid.appendChild(empScoreStat);
+
+    if (er.totalListings !== undefined) {
+      const listStat = document.createElement("div");
+      listStat.className = "ghost-fab-stat";
+      const listVal = document.createElement("div");
+      listVal.className = "ghost-fab-stat-value";
+      listVal.style.color = "#E6E8EB";
+      listVal.textContent = er.totalListings;
+      const listLabel = document.createElement("div");
+      listLabel.className = "ghost-fab-stat-label";
+      listLabel.textContent = "Listings";
+      listStat.appendChild(listVal);
+      listStat.appendChild(listLabel);
+      empStatGrid.appendChild(listStat);
+    }
+
+    if (er.avgGhostScore !== undefined) {
+      const ghostStat = document.createElement("div");
+      ghostStat.className = "ghost-fab-stat";
+      const ghostVal = document.createElement("div");
+      ghostVal.className = "ghost-fab-stat-value";
+      ghostVal.style.color = er.avgGhostScore >= 60 ? "#EF4444" : er.avgGhostScore >= 30 ? "#F59E0B" : "#10B981";
+      ghostVal.textContent = er.avgGhostScore + "/100";
+      const ghostLabel = document.createElement("div");
+      ghostLabel.className = "ghost-fab-stat-label";
+      ghostLabel.textContent = "Avg Ghost Score";
+      ghostStat.appendChild(ghostVal);
+      ghostStat.appendChild(ghostLabel);
+      empStatGrid.appendChild(ghostStat);
+    }
+
+    empDiv.appendChild(empStatGrid);
+
+    const empBar = document.createElement("div");
+    empBar.className = "ghost-fab-employer-bar";
+    const empBarFill = document.createElement("div");
+    empBarFill.className = "ghost-fab-employer-fill";
+    empBarFill.style.background = empScoreColor;
+    empBarFill.style.width = "0%";
+    empBar.appendChild(empBarFill);
+    empDiv.appendChild(empBar);
+    setTimeout(() => { empBarFill.style.width = Math.min(100, er.reputationScore) + "%"; }, 100);
+
+    panel.appendChild(empDiv);
   }
 
   const actions = document.createElement("div");
@@ -940,7 +1210,27 @@ function showFabResult(result, container, btn, ghostImg) {
   actions.appendChild(rescanBtn);
   panel.appendChild(actions);
 
-  container.appendChild(panel);
+  document.body.appendChild(panel);
+
+  const fabRect = btn.getBoundingClientRect();
+  const panelWidth = 340;
+  const panelPad = 12;
+  const maxH = window.innerHeight * 0.8;
+
+  let panelLeft, panelBottom;
+
+  if (fabRect.left > panelWidth + panelPad + 60) {
+    panelLeft = fabRect.left - panelWidth - panelPad;
+  } else {
+    panelLeft = fabRect.right + panelPad;
+  }
+
+  panelLeft = Math.max(8, Math.min(panelLeft, window.innerWidth - panelWidth - 8));
+  panelBottom = Math.max(8, window.innerHeight - fabRect.bottom);
+
+  panel.style.left = panelLeft + "px";
+  panel.style.bottom = panelBottom + "px";
+  panel.style.maxHeight = maxH + "px";
 }
 
 function removeFabIfNotJobPage() {

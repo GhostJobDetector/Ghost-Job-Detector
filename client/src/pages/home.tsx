@@ -25,7 +25,6 @@ import {
   History,
   ScanLine,
   ArrowRight,
-  Link2,
   Smartphone,
   RefreshCw,
   Shield,
@@ -705,8 +704,6 @@ function JobInputForm({
   isLoading: boolean;
 }) {
   const { toast } = useToast();
-  const [jobUrl, setJobUrl] = useState("");
-  const [isScraping, setIsScraping] = useState(false);
   const [activeTab, setActiveTab] = useState("manual");
 
   const form = useForm<JobPosting>({
@@ -720,56 +717,6 @@ function JobInputForm({
       contactEmail: "",
     },
   });
-
-  const handleScrapeUrl = async () => {
-    if (!jobUrl.trim()) {
-      toast({ title: "Enter a URL", description: "Paste a job posting URL to extract details.", variant: "destructive" });
-      return;
-    }
-    setIsScraping(true);
-    try {
-      const res = await apiRequest("POST", "/api/scrape-url", { url: jobUrl.trim() });
-      const data = await res.json();
-      if (data.error) {
-        if (data.blocked) {
-          toast({
-            title: "Site blocks automated access",
-            description: "Use our Chrome extension to scan jobs on this site directly, or copy and paste the job details into the form below.",
-            variant: "destructive",
-          });
-          setActiveTab("manual");
-        } else {
-          toast({ title: "Could not extract data", description: data.error, variant: "destructive" });
-        }
-        return;
-      }
-      if (data.title) form.setValue("title", data.title);
-      if (data.company) form.setValue("company", data.company);
-      if (data.description) form.setValue("description", data.description);
-      if (data.salary) {
-        const numericSalary = parseInt(data.salary.replace(/[^0-9]/g, ""), 10);
-        if (!isNaN(numericSalary)) form.setValue("salary", numericSalary);
-      }
-      if (data.contactEmail) form.setValue("contactEmail", data.contactEmail);
-      if (data.requirements) form.setValue("requirements", data.requirements);
-      setActiveTab("manual");
-      toast({ title: "Fields populated", description: `Extracted from ${data.source || "URL"}. Review and click Analyze.` });
-    } catch (err: any) {
-      const errData = await err?.json?.().catch(() => null);
-      if (errData?.blocked) {
-        toast({
-          title: "Site blocks automated access",
-          description: "Use our Chrome extension to scan jobs on this site directly, or copy and paste the job details into the form below.",
-          variant: "destructive",
-        });
-        setActiveTab("manual");
-      } else {
-        toast({ title: "Could not fetch URL", description: errData?.error || "This site may block automated access. Try pasting the job details into the form instead.", variant: "destructive" });
-      }
-    } finally {
-      setIsScraping(false);
-    }
-  };
 
   const onSubmit = (data: JobPosting) => {
     onAnalyze(data);
@@ -810,48 +757,48 @@ function JobInputForm({
               Manual Entry
             </TabsTrigger>
             <TabsTrigger value="url" data-testid="tab-url-entry">
-              From URL
+              From Job Site
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="url">
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Paste a job posting URL and we'll extract the details into the form for you.
-              </p>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <Link2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="https://www.linkedin.com/jobs/view/..."
-                    value={jobUrl}
-                    onChange={(e) => setJobUrl(e.target.value)}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleScrapeUrl(); } }}
-                    className="pl-9"
-                    data-testid="input-job-url"
-                  />
+            <div className="space-y-5">
+              <div className="rounded-lg border bg-muted/30 dark:bg-muted/20 p-5 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-teal-500/10 dark:bg-teal-500/15 flex items-center justify-center mt-0.5">
+                    <Chrome className="w-4.5 h-4.5 text-teal-500 dark:text-teal-400" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <h3 className="text-sm font-semibold text-foreground">Scan directly from job sites</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Install our Chrome extension to scan job listings right from LinkedIn, Indeed, Glassdoor, and ZipRecruiter. The extension reads the page you're already viewing — no data is fetched from company servers.
+                    </p>
+                    <Link href="/extension">
+                      <Button variant="outline" size="sm" className="mt-2" data-testid="button-get-extension-cta">
+                        <Chrome className="w-3.5 h-3.5 mr-1.5" />
+                        Get the Extension
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
-                <Button
-                  onClick={handleScrapeUrl}
-                  disabled={isScraping}
-                  data-testid="button-fetch-url"
-                >
-                  {isScraping ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Fetching
-                    </>
-                  ) : (
-                    <>
-                      <ScanLine className="w-4 h-4 mr-2" />
-                      Extract
-                    </>
-                  )}
-                </Button>
               </div>
-              <p className="text-xs text-muted-foreground/60">
-                Supports LinkedIn, Indeed, Glassdoor, ZipRecruiter, and most job boards. Results are auto-filled into the form for review.
-              </p>
+              <div className="rounded-lg border bg-muted/30 dark:bg-muted/20 p-5 space-y-4">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-blue-500/10 dark:bg-blue-500/15 flex items-center justify-center mt-0.5">
+                    <FileText className="w-4.5 h-4.5 text-blue-500 dark:text-blue-400" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <h3 className="text-sm font-semibold text-foreground">Or paste the job details manually</h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                      Copy the job title, company, and description from the listing and paste them into the form. We'll analyze the content without ever contacting the job site.
+                    </p>
+                    <Button variant="outline" size="sm" className="mt-2" onClick={() => setActiveTab("manual")} data-testid="button-switch-manual">
+                      <ArrowRight className="w-3.5 h-3.5 mr-1.5" />
+                      Go to Manual Entry
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </div>
           </TabsContent>
 

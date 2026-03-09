@@ -19,13 +19,6 @@ function getSeverityColor(severity) {
   }
 }
 
-function getReputationColor(score) {
-  if (score >= 70) return "#10B981";
-  if (score >= 50) return "#F59E0B";
-  if (score >= 30) return "#F97316";
-  return "#EF4444";
-}
-
 const scanBtn = document.getElementById("scan-btn");
 const scanError = document.getElementById("scan-error");
 const scanResult = document.getElementById("scan-result");
@@ -35,8 +28,6 @@ const resultRec = document.getElementById("result-rec");
 const resultFlags = document.getElementById("result-flags");
 const repostSection = document.getElementById("repost-section");
 const repostContent = document.getElementById("repost-content");
-const employerSection = document.getElementById("employer-section");
-const employerContent = document.getElementById("employer-content");
 const autoScanNotice = document.getElementById("auto-scan-notice");
 const settingsToggle = document.getElementById("settings-toggle");
 const settingsPanel = document.getElementById("settings-panel");
@@ -130,62 +121,11 @@ function renderRepostSection(repostData) {
   repostSection.classList.add("visible");
 }
 
-function renderEmployerSection(employerData) {
-  if (!employerData) return;
-
-  employerContent.innerHTML = "";
-
-  const score = employerData.reputationScore ?? 50;
-  const color = getReputationColor(score);
-
-  const barContainer = document.createElement("div");
-  barContainer.className = "reputation-bar-container";
-  barContainer.innerHTML = `
-    <div class="reputation-header">
-      <span class="reputation-label" data-testid="employer-company">${employerData.company || "Unknown"}</span>
-      <span class="reputation-value" data-testid="employer-reputation-score" style="color: ${color}">${score}/100</span>
-    </div>
-    <div class="reputation-bar">
-      <div class="reputation-bar-fill" data-testid="employer-reputation-bar" style="width: ${score}%; background: ${color}"></div>
-    </div>
-  `;
-  employerContent.appendChild(barContainer);
-
-  const stats = document.createElement("div");
-  stats.className = "employer-stats";
-  stats.setAttribute("data-testid", "employer-stats");
-  stats.innerHTML = `
-    <div class="employer-stat">Total listings: <span class="employer-stat-value">${employerData.totalListings ?? 0}</span></div>
-    <div class="employer-stat">Reposts: <span class="employer-stat-value">${employerData.repostCount ?? 0}</span></div>
-    <div class="employer-stat">Avg ghost score: <span class="employer-stat-value">${employerData.avgGhostScore != null ? Math.round(employerData.avgGhostScore) : "N/A"}</span></div>
-    <div class="employer-stat">Last updated: <span class="employer-stat-value">${employerData.lastUpdated ? new Date(employerData.lastUpdated).toLocaleDateString() : "N/A"}</span></div>
-  `;
-  employerContent.appendChild(stats);
-
-  if (employerData.perpetualHiring) {
-    const flag = document.createElement("div");
-    flag.className = "perpetual-flag";
-    flag.setAttribute("data-testid", "employer-perpetual-flag");
-    flag.innerHTML = `
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-        <line x1="12" y1="9" x2="12" y2="13"/>
-        <line x1="12" y1="17" x2="12.01" y2="17"/>
-      </svg>
-      Perpetual hiring pattern detected
-    `;
-    employerContent.appendChild(flag);
-  }
-
-  employerSection.classList.add("visible");
-}
-
 async function runScan(isAutoScan) {
   scanBtn.disabled = true;
   scanError.classList.remove("visible");
   scanResult.classList.remove("visible");
   repostSection.classList.remove("visible");
-  employerSection.classList.remove("visible");
 
   if (isAutoScan) {
     autoScanNotice.classList.add("visible");
@@ -258,9 +198,6 @@ async function runScan(isAutoScan) {
       renderRepostSection(data.repostDetection);
     }
 
-    if (data.employerReputation) {
-      renderEmployerSection(data.employerReputation);
-    }
 
     scanResult.classList.add("visible");
   } catch (err) {

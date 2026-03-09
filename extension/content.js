@@ -642,18 +642,6 @@ function createFloatingGhostButton() {
       color: #9CA3AF;
       margin: 0 4px 4px 0;
     }
-    .ghost-fab-employer-bar {
-      height: 4px;
-      border-radius: 2px;
-      background: #2A2D35;
-      overflow: hidden;
-      margin-top: 4px;
-    }
-    .ghost-fab-employer-fill {
-      height: 100%;
-      border-radius: 2px;
-      transition: width 0.6s ease-out;
-    }
     #ghost-fab-result-close {
       position: absolute;
       top: 8px;
@@ -1100,80 +1088,6 @@ function showFabResult(result, container, btn, ghostImg) {
       }
     }
     panel.appendChild(repostDiv);
-  }
-
-  if (result.employerReputation) {
-    const empDiv = document.createElement("div");
-    empDiv.className = "ghost-fab-section";
-    empDiv.setAttribute("data-testid", "ghost-fab-employer-section");
-
-    const empTitle = document.createElement("div");
-    empTitle.className = "ghost-fab-section-title";
-    empTitle.textContent = "Employer Reputation";
-    empDiv.appendChild(empTitle);
-
-    const er = result.employerReputation;
-    const empScoreColor = er.reputationScore >= 70 ? "#10B981" : er.reputationScore >= 40 ? "#F59E0B" : "#EF4444";
-
-    const empStatGrid = document.createElement("div");
-    empStatGrid.className = "ghost-fab-stat-grid";
-
-    const empScoreStat = document.createElement("div");
-    empScoreStat.className = "ghost-fab-stat";
-    const empScoreVal = document.createElement("div");
-    empScoreVal.className = "ghost-fab-stat-value";
-    empScoreVal.style.color = empScoreColor;
-    empScoreVal.textContent = er.reputationScore + "/100";
-    const empScoreLabel = document.createElement("div");
-    empScoreLabel.className = "ghost-fab-stat-label";
-    empScoreLabel.textContent = "Score";
-    empScoreStat.appendChild(empScoreVal);
-    empScoreStat.appendChild(empScoreLabel);
-    empStatGrid.appendChild(empScoreStat);
-
-    if (er.totalListings !== undefined) {
-      const listStat = document.createElement("div");
-      listStat.className = "ghost-fab-stat";
-      const listVal = document.createElement("div");
-      listVal.className = "ghost-fab-stat-value";
-      listVal.style.color = "#E6E8EB";
-      listVal.textContent = er.totalListings;
-      const listLabel = document.createElement("div");
-      listLabel.className = "ghost-fab-stat-label";
-      listLabel.textContent = "Listings";
-      listStat.appendChild(listVal);
-      listStat.appendChild(listLabel);
-      empStatGrid.appendChild(listStat);
-    }
-
-    if (er.avgGhostScore !== undefined) {
-      const ghostStat = document.createElement("div");
-      ghostStat.className = "ghost-fab-stat";
-      const ghostVal = document.createElement("div");
-      ghostVal.className = "ghost-fab-stat-value";
-      ghostVal.style.color = er.avgGhostScore >= 60 ? "#EF4444" : er.avgGhostScore >= 30 ? "#F59E0B" : "#10B981";
-      ghostVal.textContent = er.avgGhostScore + "/100";
-      const ghostLabel = document.createElement("div");
-      ghostLabel.className = "ghost-fab-stat-label";
-      ghostLabel.textContent = "Avg Ghost Score";
-      ghostStat.appendChild(ghostVal);
-      ghostStat.appendChild(ghostLabel);
-      empStatGrid.appendChild(ghostStat);
-    }
-
-    empDiv.appendChild(empStatGrid);
-
-    const empBar = document.createElement("div");
-    empBar.className = "ghost-fab-employer-bar";
-    const empBarFill = document.createElement("div");
-    empBarFill.className = "ghost-fab-employer-fill";
-    empBarFill.style.background = empScoreColor;
-    empBarFill.style.width = "0%";
-    empBar.appendChild(empBarFill);
-    empDiv.appendChild(empBar);
-    setTimeout(() => { empBarFill.style.width = Math.min(100, er.reputationScore) + "%"; }, 100);
-
-    panel.appendChild(empDiv);
   }
 
   const actions = document.createElement("div");

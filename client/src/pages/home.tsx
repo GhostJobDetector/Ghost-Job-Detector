@@ -26,10 +26,6 @@ import {
   ScanLine,
   ArrowRight,
   Smartphone,
-  RefreshCw,
-  Shield,
-  ShieldAlert,
-  ShieldCheck,
   TrendingDown,
   TrendingUp,
   BarChart3,
@@ -68,7 +64,6 @@ import {
   type RedFlag,
   type RedFlagSeverity,
   type RepostDetection,
-  type EmployerReputation,
 } from "@shared/schema";
 
 const severityConfig: Record<
@@ -500,105 +495,6 @@ function RepostDetectionSection({ data }: { data: RepostDetection }) {
   );
 }
 
-function EmployerReputationSection({ data }: { data: EmployerReputation }) {
-  const getScoreColor = (score: number) => {
-    if (score >= 70) return "text-emerald-500";
-    if (score >= 40) return "text-amber-500";
-    return "text-red-500";
-  };
-
-  const getScoreBg = (score: number) => {
-    if (score >= 70) return "bg-emerald-500";
-    if (score >= 40) return "bg-amber-500";
-    return "bg-red-500";
-  };
-
-  const getScoreLabel = (score: number) => {
-    if (score >= 70) return "Good";
-    if (score >= 40) return "Fair";
-    return "Poor";
-  };
-
-  const ShieldIcon = data.reputationScore >= 70 ? ShieldCheck : data.reputationScore >= 40 ? Shield : ShieldAlert;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: 0.9 }}
-    >
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <ShieldIcon className={`w-4 h-4 ${getScoreColor(data.reputationScore)}`} />
-              <CardTitle className="text-sm font-medium">Employer Reputation</CardTitle>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className={`text-lg font-bold tabular-nums ${getScoreColor(data.reputationScore)}`} data-testid="text-employer-score">
-                {data.reputationScore}
-              </span>
-              <Badge
-                variant="secondary"
-                className="text-xs"
-                data-testid="badge-employer-rating"
-              >
-                {getScoreLabel(data.reputationScore)}
-              </Badge>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-0 space-y-3">
-          <div className="w-full h-2 rounded-full bg-muted overflow-hidden" data-testid="bar-employer-score">
-            <motion.div
-              className={`h-full rounded-full ${getScoreBg(data.reputationScore)}`}
-              initial={{ width: 0 }}
-              animate={{ width: `${data.reputationScore}%` }}
-              transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="text-center p-2 rounded-lg bg-muted/50">
-              <div className="text-sm font-semibold tabular-nums" data-testid="text-total-listings">{data.totalListings}</div>
-              <div className="text-xs text-muted-foreground">Listings</div>
-            </div>
-            <div className="text-center p-2 rounded-lg bg-muted/50">
-              <div className="text-sm font-semibold tabular-nums" data-testid="text-repost-rate">
-                {data.totalListings > 0 ? Math.round((data.repostCount / data.totalListings) * 100) : 0}%
-              </div>
-              <div className="text-xs text-muted-foreground">Repost Rate</div>
-            </div>
-            <div className="text-center p-2 rounded-lg bg-muted/50">
-              <div className="text-sm font-semibold tabular-nums" data-testid="text-avg-ghost">{data.avgGhostScore}</div>
-              <div className="text-xs text-muted-foreground">Avg Ghost Score</div>
-            </div>
-            <div className="text-center p-2 rounded-lg bg-muted/50">
-              <div className="text-sm font-semibold tabular-nums" data-testid="text-high-risk">{data.highRiskCount}</div>
-              <div className="text-xs text-muted-foreground">High Risk</div>
-            </div>
-          </div>
-
-          {(data.perpetualHiring || data.vaguePayCount > 0) && (
-            <div className="flex flex-wrap gap-2">
-              {data.perpetualHiring && (
-                <Badge variant="destructive" className="text-xs" data-testid="badge-perpetual-hiring">
-                  <RefreshCw className="w-3 h-3 mr-1" />
-                  Perpetual Hiring
-                </Badge>
-              )}
-              {data.vaguePayCount > 0 && (
-                <Badge variant="secondary" className="text-xs" data-testid="badge-vague-pay">
-                  {data.vaguePayCount} listings with vague pay
-                </Badge>
-              )}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </motion.div>
-  );
-}
 
 function ResultsDisplay({ result }: { result: AnalysisResult }) {
   return (
@@ -686,12 +582,6 @@ function ResultsDisplay({ result }: { result: AnalysisResult }) {
         </div>
       )}
 
-      {result.employerReputation && (
-        <div>
-          <h3 className="text-sm font-medium uppercase tracking-wider text-muted-foreground mb-4">Employer Reputation</h3>
-          <EmployerReputationSection data={result.employerReputation} />
-        </div>
-      )}
     </motion.div>
   );
 }

@@ -731,7 +731,16 @@ function JobInputForm({
       const res = await apiRequest("POST", "/api/scrape-url", { url: jobUrl.trim() });
       const data = await res.json();
       if (data.error) {
-        toast({ title: "Could not extract data", description: data.error, variant: "destructive" });
+        if (data.blocked) {
+          toast({
+            title: "Site blocks automated access",
+            description: "Use our Chrome extension to scan jobs on this site directly, or copy and paste the job details into the form below.",
+            variant: "destructive",
+          });
+          setActiveTab("manual");
+        } else {
+          toast({ title: "Could not extract data", description: data.error, variant: "destructive" });
+        }
         return;
       }
       if (data.title) form.setValue("title", data.title);
@@ -746,7 +755,17 @@ function JobInputForm({
       setActiveTab("manual");
       toast({ title: "Fields populated", description: `Extracted from ${data.source || "URL"}. Review and click Analyze.` });
     } catch (err: any) {
-      toast({ title: "Scrape failed", description: err.message || "Could not fetch the URL.", variant: "destructive" });
+      const errData = await err?.json?.().catch(() => null);
+      if (errData?.blocked) {
+        toast({
+          title: "Site blocks automated access",
+          description: "Use our Chrome extension to scan jobs on this site directly, or copy and paste the job details into the form below.",
+          variant: "destructive",
+        });
+        setActiveTab("manual");
+      } else {
+        toast({ title: "Could not fetch URL", description: errData?.error || "This site may block automated access. Try pasting the job details into the form instead.", variant: "destructive" });
+      }
     } finally {
       setIsScraping(false);
     }

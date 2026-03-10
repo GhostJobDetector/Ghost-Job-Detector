@@ -6,6 +6,9 @@ import {
   Zap,
   Lightbulb,
   Shield,
+  Brain,
+  Search,
+  MessageSquareText,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -138,7 +141,63 @@ export default function AboutPage() {
           <motion.div
             initial={{ opacity: 0, y: 15 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
+            transition={{ delay: 0.3 }}
+            className="space-y-5"
+            data-testid="section-ai-models"
+          >
+            <h2 className="text-xl font-semibold text-foreground">
+              Powered by a Three-Model AI Pipeline
+            </h2>
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              Every job listing is analyzed simultaneously by three specialized AI models, each contributing a unique perspective to generate a comprehensive risk assessment.
+            </p>
+            <div className="grid gap-4">
+              <Card className="border bg-card/50 dark:bg-card/30" data-testid="card-ai-chatgpt">
+                <CardContent className="p-5">
+                  <div className="flex gap-4 items-start">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-emerald-500/10 dark:bg-emerald-500/15 flex items-center justify-center">
+                      <Brain className="w-5 h-5 text-emerald-500 dark:text-emerald-400" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="font-semibold text-sm text-foreground">ChatGPT <span className="text-xs font-normal text-muted-foreground">(OpenAI)</span></h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">Risk scoring and red flag detection. Evaluates the overall job posting for ghost job indicators, scam patterns, and assigns the primary ghost score.</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border bg-card/50 dark:bg-card/30" data-testid="card-ai-claude">
+                <CardContent className="p-5">
+                  <div className="flex gap-4 items-start">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-violet-500/10 dark:bg-violet-500/15 flex items-center justify-center">
+                      <MessageSquareText className="w-5 h-5 text-violet-500 dark:text-violet-400" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="font-semibold text-sm text-foreground">Claude <span className="text-xs font-normal text-muted-foreground">(Anthropic)</span></h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">Language and tone analysis. Measures vagueness, professionalism, and detects manipulative or deceptive language patterns in the job description.</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border bg-card/50 dark:bg-card/30" data-testid="card-ai-perplexity">
+                <CardContent className="p-5">
+                  <div className="flex gap-4 items-start">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-blue-500/10 dark:bg-blue-500/15 flex items-center justify-center">
+                      <Search className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="font-semibold text-sm text-foreground">Perplexity <span className="text-xs font-normal text-muted-foreground">(Web Search AI)</span></h3>
+                      <p className="text-sm text-muted-foreground leading-relaxed">Real-time company verification. Searches the web to confirm whether the company exists, has a legitimate web presence, and matches the industry of the posted role.</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
             data-testid="section-privacy"
           >
             <Card className="border border-teal-500/20 bg-teal-500/5 dark:bg-teal-500/10">
@@ -180,6 +239,12 @@ export default function AboutPage() {
               </Button>
             </Link>
           </motion.div>
+
+          <footer className="text-center pb-6 pt-2 border-t border-border/40">
+            <p className="text-xs text-muted-foreground" data-testid="text-footer">
+              GhostJobDetector 2026
+            </p>
+          </footer>
         </motion.div>
       </main>
     </div>

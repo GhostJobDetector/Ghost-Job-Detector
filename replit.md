@@ -151,8 +151,9 @@ The fallback analysis logic lives in `server/routes.ts` and uses pattern matchin
 - **API**: Sends extracted job data to configured Ghost Job Detector `/api/analyze` endpoint (HTTPS enforced)
 - **CORS**: Backend has CORS headers on `/api/analyze` to allow extension requests
 - **Floating Ghost Button (FAB)**: Persistent floating button appears on job pages; click to scan directly from the page; shows expanded result panel (340px) with full ghost score, all red flags, repost detection stats/similar listings, and employer reputation breakdown
+- **Resilient Job Extraction**: FAB uses an `extractWithRetry` loop (up to 5 attempts, 800ms delay) to handle slow-loading job descriptions (especially on LinkedIn where the right-pane content is async). If the description is still under 100 chars after retries, the user is prompted to scroll to load more.
 - **Auto-Scan**: Extension auto-detects job pages and scans when popup opens; badge shows "!" on job pages
-- **Security**: All dynamic content in popup uses safe DOM methods to prevent XSS
+- **Security**: All dynamic content in both popup and content scripts uses safe DOM methods (`createElement` + `textContent` + `replaceChildren`) instead of `innerHTML` to prevent XSS
 - **Installation**: Load unpacked in Chrome (chrome://extensions > Developer mode > Load unpacked > select /extension folder)
 - **Extension Page**: `/extension` route — instruction page with download link, installation guide, features, supported sites, FAQ
 - **Privacy Page**: `/privacy` route — privacy & data practices page explaining no server-side scraping, user-controlled data, extension permissions, data flow
@@ -201,3 +202,10 @@ The fallback analysis logic lives in `server/routes.ts` and uses pattern matchin
 ### Development Tools
 - Replit-specific Vite plugins (error overlay, cartographer, dev banner)
 - esbuild for production server bundling with dependency allowlist
+
+### Deployment
+- **Target**: Autoscale (Replit Deployments)
+- **Build**: `bash deploy-build.sh` — installs all dependencies (including dev) then runs the build pipeline. Using a script file rather than an inline `bash -c` command avoids TOML parsing edge cases in the deployment runner.
+- **Run**: `npm run start` — executes `node dist/index.cjs` in production mode
+- **Build pipeline** (`script/build.ts`): syncs extension version → builds client with Vite → bundles server with esbuild (CJS, minified, externals defined by allowlist)
+- **Why install dev deps at build time**: `tsx` and other build tools live in `devDependencies`; they're needed to run the build script but are not bundled into the final server output
